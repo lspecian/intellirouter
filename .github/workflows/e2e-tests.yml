@@ -23,6 +23,11 @@ jobs:
           toolchain: stable
           override: true
           components: rustfmt, clippy
+          
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libssl-dev build-essential g++ libfontconfig1-dev
 
       - name: Cache dependencies
         uses: actions/cache@v3
