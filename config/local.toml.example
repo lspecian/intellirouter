@@ -1,0 +1,49 @@
+# Local configuration example for IntelliRouter
+# This file is an example of a local configuration that can be used to override
+# environment-specific settings without committing them to version control.
+# Copy this file to local.toml and modify as needed.
+
+# Server configuration
+[server]
+port = 9000  # Use a custom port
+
+# Model registry configuration
+[model_registry]
+default_provider = "anthropic"  # Override default provider
+
+# LLM providers - add custom providers or override existing ones
+[[model_registry.providers]]
+name = "azure-openai"
+api_key_env = "AZURE_OPENAI_API_KEY"
+endpoint = "https://your-resource-name.openai.azure.com"
+default_model = "gpt-4"
+available_models = ["gpt-4", "gpt-35-turbo"]
+timeout_secs = 60
+max_retries = 3
+settings = { api_version = "2023-05-15" }
+
+# Memory configuration
+[memory]
+# Use a local Redis instance
+backend_type = "redis"
+redis_url = "redis://localhost:6379/0"
+
+# Authentication and authorization configuration
+[auth]
+# Enable authentication locally with a test key
+auth_enabled = true
+auth_method = "api_key"
+api_keys = ["local-development-key"]
+
+# RAG configuration
+[rag]
+# Enable RAG with a local vector database
+enabled = true
+vector_db_url = "postgres://postgres:postgres@localhost:5432/vectordb"
+
+# Plugin SDK configuration
+[plugin_sdk]
+# Enable plugins for local development
+enabled = true
+plugins_dir = "./local-plugins"
+allowed_hosts = ["localhost", "127.0.0.1"]

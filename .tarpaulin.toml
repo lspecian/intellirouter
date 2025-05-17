@@ -1,0 +1,39 @@
+# Tarpaulin configuration for IntelliRouter
+
+# Specify the workspace members to analyze
+workspace = true
+
+# Exclude certain files or directories from coverage
+exclude = [
+    "tests/*",
+    "examples/*",
+    "benches/*",
+    "src/main.rs",
+]
+
+# Set the coverage threshold
+threshold = 80
+
+# Output formats
+out = ["Html", "Xml", "Json"]
+
+# Output directory for reports
+output-dir = "coverage"
+
+# Run doctests
+run-types = ["Tests", "Doctests"]
+
+# Include branch coverage
+branches = true
+
+# Fail if coverage is below threshold
+fail-under = 80
+
+# Timeout for tests in seconds
+timeout = 300
+
+# Verbose output
+verbose = true
+
+# Features to enable during coverage
+features = ["memory-backend"]

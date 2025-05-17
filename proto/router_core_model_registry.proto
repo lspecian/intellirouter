@@ -1,0 +1,916 @@
+syntax = "proto3";
+
+package intellirouter.model_registry.v1;
+
+import "google/protobuf/timestamp.proto";
+import "common.proto";
+
+option go_package = "github.com/intellirouter/intellirouter/proto/model_registry/v1";
+option java_multiple_files = true;
+option java_package = "com.intellirouter.proto.model_registry.v1";
+
+// ModelRegistryService provides methods for model registry operations
+service ModelRegistryService {
+  // RegisterModel registers a model in the registry
+  rpc RegisterModel(RegisterModelRequest) returns (RegisterModelResponse);
+  
+  // GetModel gets a model by ID
+  rpc GetModel(GetModelRequest) returns (GetModelResponse);
+  
+  // UpdateModel updates a model in the registry
+  rpc UpdateModel(UpdateModelRequest) returns (UpdateModelResponse);
+  
+  // RemoveModel removes a model from the registry
+  rpc RemoveModel(RemoveModelRequest) returns (RemoveModelResponse);
+  
+  // ListModels lists all models in the registry
+  rpc ListModels(ListModelsRequest) returns (ListModelsResponse);
+  
+  // FindModels finds models matching a filter
+  rpc FindModels(FindModelsRequest) returns (FindModelsResponse);
+  
+  // UpdateModelStatus updates a model's status
+  rpc UpdateModelStatus(UpdateModelStatusRequest) returns (UpdateModelStatusResponse);
+  
+  // CheckModelHealth checks a model's health
+  rpc CheckModelHealth(CheckModelHealthRequest) returns (CheckModelHealthResponse);
+}
+
+// ModelType represents the type of model
+enum ModelType {
+  // Default value, should not be used
+  MODEL_TYPE_UNSPECIFIED = 0;
+  
+  // Chat completion model
+  MODEL_TYPE_CHAT = 1;
+  
+  // Text completion model
+  MODEL_TYPE_TEXT = 2;
+  
+  // Embedding model
+  MODEL_TYPE_EMBEDDING = 3;
+  
+  // Image generation model
+  MODEL_TYPE_IMAGE = 4;
+  
+  // Audio transcription model
+  MODEL_TYPE_AUDIO = 5;
+  
+  // Multimodal model
+  MODEL_TYPE_MULTIMODAL = 6;
+}
+
+// ModelStatus represents the status of a model
+enum ModelStatus {
+  // Default value, should not be used
+  MODEL_STATUS_UNSPECIFIED = 0;
+  
+  // Model is available
+  MODEL_STATUS_AVAILABLE = 1;
+  
+  // Model is unavailable
+  MODEL_STATUS_UNAVAILABLE = 2;
+  
+  // Model is in maintenance
+  MODEL_STATUS_MAINTENANCE = 3;
+  
+  // Model is deprecated
+  MODEL_STATUS_DEPRECATED = 4;
+  
+  // Model is limited (e.g., rate limited)
+  MODEL_STATUS_LIMITED = 5;
+}
+
+// ModelCapabilities represents the capabilities of a model
+message ModelCapabilities {
+  // Whether the model supports streaming
+  bool streaming = 1;
+  
+  // Whether the model supports function calling
+  bool function_calling = 2;
+  
+  // Whether the model supports vision
+  bool vision = 3;
+  
+  // Whether the model supports audio
+  bool audio = 4;
+  
+  // Whether the model supports tools
+  bool tools = 5;
+  
+  // Whether the model supports JSON mode
+  bool json_mode = 6;
+  
+  // Whether the model supports parallel function calling
+  bool parallel_function_calling = 7;
+  
+  // Whether the model supports response format
+  bool response_format = 8;
+  
+  // Whether the model supports seed
+  bool seed = 9;
+  
+  // Additional capabilities
+  repeated string additional_capabilities = 10;
+}
+
+// ConnectorConfig represents configuration for a model connector
+message ConnectorConfig {
+  // Type of connector
+  string type = 1;
+  
+  // Endpoint URL
+  string endpoint_url = 2;
+  
+  // API key (should be handled securely)
+  string api_key = 3;
+  
+  // Organization ID
+  string org_id = 4;
+  
+  // Timeout in milliseconds
+  uint32 timeout_ms = 5;
+  
+  // Maximum retries
+  uint32 max_retries = 6;
+  
+  // Additional configuration parameters
+  map<string, string> parameters = 7;
+}
+
+// ModelMetadata represents metadata for a model
+message ModelMetadata {
+  // Unique identifier for the model
+  string id = 1;
+  
+  // Name of the model
+  string name = 2;
+  
+  // Provider of the model (e.g., "openai", "anthropic")
+  string provider = 3;
+  
+  // Version of the model
+  string version = 4;
+  
+  // Type of the model
+  ModelType type = 5;
+  
+  // Status of the model
+  ModelStatus status = 6;
+  
+  // Maximum context window size in tokens
+  uint32 context_window = 7;
+  
+  // Model capabilities
+  ModelCapabilities capabilities = 8;
+  
+  // Cost per 1K tokens (input)
+  float cost_per_1k_input = 9;
+  
+  // Cost per 1K tokens (output)
+  float cost_per_1k_output = 10;
+  
+  // Average latency in milliseconds
+  float avg_latency_ms = 11;
+  
+  // Maximum tokens per request
+  uint32 max_tokens_per_request = 12;
+  
+  // Maximum requests per minute
+  uint32 max_requests_per_minute = 13;
+  
+  // When the model was created
+  google.protobuf.Timestamp created_at = 14;
+  
+  // When the model was last updated
+  google.protobuf.Timestamp updated_at = 15;
+  
+  // When the model was last checked
+  google.protobuf.Timestamp last_checked_at = 16;
+  
+  // Additional metadata about the model
+  map<string, string> metadata = 17;
+  
+  // Tags for categorization
+  repeated string tags = 18;
+  
+  // Connector configuration
+  ConnectorConfig connector_config = 19;
+}
+
+// ModelFilter represents a filter for finding models
+message ModelFilter {
+  // Filter by provider
+  repeated string providers = 1;
+  
+  // Filter by type
+  repeated ModelType types = 2;
+  
+  // Filter by status
+  repeated ModelStatus statuses = 3;
+  
+  // Filter by minimum context window
+  uint32 min_context_window = 4;
+  
+  // Filter by required capabilities
+  ModelCapabilities required_capabilities = 5;
+  
+  // Filter by maximum cost per 1K tokens (input)
+  float max_cost_per_1k_input = 6;
+  
+  // Filter by maximum cost per 1K tokens (output)
+  float max_cost_per_1k_output = 7;
+  
+  // Filter by maximum latency in milliseconds
+  float max_latency_ms = 8;
+  
+  // Filter by tags (all tags must match)
+  repeated string tags = 9;
+  
+  // Filter by metadata (all metadata must match)
+  map<string, string> metadata = 10;
+}
+
+// RegisterModelRequest is sent to register a model
+message RegisterModelRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Model metadata
+  ModelMetadata metadata = 2;
+}
+
+// RegisterModelResponse is returned after registering a model
+message RegisterModelResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Registered model metadata
+  ModelMetadata metadata = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// GetModelRequest is sent to get a model by ID
+message GetModelRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Model ID
+  string model_id = 2;
+}
+
+// GetModelResponse is returned with the requested model
+message GetModelResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Model metadata
+  ModelMetadata metadata = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// UpdateModelRequest is sent to update a model
+message UpdateModelRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Model metadata
+  ModelMetadata metadata = 2;
+}
+
+// UpdateModelResponse is returned after updating a model
+message UpdateModelResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Updated model metadata
+  ModelMetadata metadata = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// RemoveModelRequest is sent to remove a model
+message RemoveModelRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Model ID
+  string model_id = 2;
+}
+
+// RemoveModelResponse is returned after removing a model
+message RemoveModelResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Removed model metadata
+  ModelMetadata metadata = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// ListModelsRequest is sent to list models
+message ListModelsRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+}
+
+// ListModelsResponse is returned with the list of models
+message ListModelsResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Models
+  repeated ModelMetadata models = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// FindModelsRequest is sent to find models matching a filter
+message FindModelsRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Model filter
+  ModelFilter filter = 2;
+}
+
+// FindModelsResponse is returned with the models matching the filter
+message FindModelsResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Models matching the filter
+  repeated ModelMetadata models = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// UpdateModelStatusRequest is sent to update a model's status
+message UpdateModelStatusRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Model ID
+  string model_id = 2;
+  
+  // New status
+  ModelStatus status = 3;
+  
+  // Reason for the status update
+  string reason = 4;
+}
+
+// UpdateModelStatusResponse is returned after updating a model's status
+message UpdateModelStatusResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Updated model metadata
+  ModelMetadata metadata = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// CheckModelHealthRequest is sent to check a model's health
+message CheckModelHealthRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Model ID
+  string model_id = 2;
+  
+  // Timeout in milliseconds
+  uint32 timeout_ms = 3;
+}
+
+// CheckModelHealthResponse is returned with the model's health status
+message CheckModelHealthResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Health check result
+  HealthCheckResult result = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// HealthCheckResult represents the result of a health check
+message HealthCheckResult {
+  // Whether the model is healthy
+  bool healthy = 1;
+  
+  // Latency in milliseconds
+  float latency_ms = 2;
+  
+  // Error message (if not healthy)
+  string error_message = 3;
+  
+  // When the health check was performed
+  google.protobuf.Timestamp timestamp = 4;
+  
+  // Additional details about the health check
+  map<string, string> details = 5;
+}
+
+// RouterService provides methods for routing operations
+service RouterService {
+  // RouteRequest routes a request to the appropriate model
+  rpc RouteRequest(RouteRequestRequest) returns (RouteRequestResponse);
+  
+  // StreamRouteRequest routes a request and streams the response
+  rpc StreamRouteRequest(RouteRequestRequest) returns (stream RouteRequestStreamResponse);
+  
+  // GetRoutingStrategies gets the available routing strategies
+  rpc GetRoutingStrategies(GetRoutingStrategiesRequest) returns (GetRoutingStrategiesResponse);
+  
+  // UpdateRoutingStrategy updates a routing strategy configuration
+  rpc UpdateRoutingStrategy(UpdateRoutingStrategyRequest) returns (UpdateRoutingStrategyResponse);
+}
+
+// RoutingStrategy represents a routing strategy
+enum RoutingStrategy {
+  // Default value, should not be used
+  ROUTING_STRATEGY_UNSPECIFIED = 0;
+  
+  // Round-robin distribution across models
+  ROUTING_STRATEGY_ROUND_ROBIN = 1;
+  
+  // Load-balanced distribution based on model availability and capacity
+  ROUTING_STRATEGY_LOAD_BALANCED = 2;
+  
+  // Content-based routing using request analysis
+  ROUTING_STRATEGY_CONTENT_BASED = 3;
+  
+  // Cost-optimized routing to minimize token costs
+  ROUTING_STRATEGY_COST_OPTIMIZED = 4;
+  
+  // Latency-optimized routing for fastest response times
+  ROUTING_STRATEGY_LATENCY_OPTIMIZED = 5;
+  
+  // Custom strategy
+  ROUTING_STRATEGY_CUSTOM = 6;
+}
+
+// RoutingContext represents the context for a routing decision
+message RoutingContext {
+  // Original chat completion request
+  ChatCompletionRequest request = 1;
+  
+  // User ID (if available)
+  string user_id = 2;
+  
+  // Organization ID (if available)
+  string org_id = 3;
+  
+  // Request timestamp
+  google.protobuf.Timestamp timestamp = 4;
+  
+  // Request priority (higher values indicate higher priority)
+  uint32 priority = 5;
+  
+  // Request tags for categorization
+  repeated string tags = 6;
+  
+  // Additional context parameters
+  map<string, string> parameters = 7;
+}
+
+// RoutingRequest represents a request to route
+message RoutingRequest {
+  // Routing context
+  RoutingContext context = 1;
+  
+  // Model filter for selecting eligible models
+  ModelFilter model_filter = 2;
+  
+  // Preferred model ID (if any)
+  string preferred_model_id = 3;
+  
+  // Excluded model IDs
+  repeated string excluded_model_ids = 4;
+  
+  // Maximum routing attempts
+  uint32 max_attempts = 5;
+  
+  // Routing timeout in milliseconds
+  uint32 timeout_ms = 6;
+  
+  // Routing strategy to use
+  RoutingStrategy strategy = 7;
+  
+  // Strategy-specific parameters
+  map<string, string> strategy_parameters = 8;
+}
+
+// RoutingMetadata represents metadata about a routing decision
+message RoutingMetadata {
+  // ID of the selected model
+  string selected_model_id = 1;
+  
+  // Name of the strategy that made the selection
+  string strategy_name = 2;
+  
+  // Timestamp when routing started
+  google.protobuf.Timestamp routing_start_time = 3;
+  
+  // Timestamp when routing completed
+  google.protobuf.Timestamp routing_end_time = 4;
+  
+  // Total routing time in milliseconds
+  uint64 routing_time_ms = 5;
+  
+  // Number of models considered during routing
+  uint32 models_considered = 6;
+  
+  // Number of routing attempts made
+  uint32 attempts = 7;
+  
+  // Whether this was a fallback selection
+  bool is_fallback = 8;
+  
+  // Selection criteria used (e.g., "lowest_cost", "lowest_latency")
+  string selection_criteria = 9;
+  
+  // Additional metadata about the routing decision
+  map<string, string> additional_metadata = 10;
+}
+
+// ChatCompletionRequest represents a chat completion request
+message ChatCompletionRequest {
+  // Model to use (may be overridden by routing)
+  string model = 1;
+  
+  // Messages in the conversation
+  repeated intellirouter.common.v1.Message messages = 2;
+  
+  // Maximum tokens to generate
+  uint32 max_tokens = 3;
+  
+  // Temperature for generation
+  float temperature = 4;
+  
+  // Top-p for generation
+  float top_p = 5;
+  
+  // Number of completions to generate
+  uint32 n = 6;
+  
+  // Whether to stream the response
+  bool stream = 7;
+  
+  // Stop sequences
+  repeated string stop = 8;
+  
+  // Presence penalty
+  float presence_penalty = 9;
+  
+  // Frequency penalty
+  float frequency_penalty = 10;
+  
+  // Logit bias
+  map<string, float> logit_bias = 11;
+  
+  // User identifier
+  string user = 12;
+  
+  // Response format
+  ResponseFormat response_format = 13;
+  
+  // Seed for deterministic generation
+  int64 seed = 14;
+  
+  // Tools available to the model
+  repeated Tool tools = 15;
+  
+  // Tool choice
+  ToolChoice tool_choice = 16;
+  
+  // Additional parameters
+  map<string, string> additional_parameters = 17;
+}
+
+// ResponseFormat represents the format for the response
+message ResponseFormat {
+  // Type of response format
+  string type = 1;
+}
+
+// Tool represents a tool available to the model
+message Tool {
+  // Tool type
+  string type = 1;
+  
+  // Function definition
+  FunctionDefinition function = 2;
+}
+
+// FunctionDefinition represents a function definition
+message FunctionDefinition {
+  // Function name
+  string name = 1;
+  
+  // Function description
+  string description = 2;
+  
+  // Function parameters schema (JSON Schema)
+  string parameters = 3;
+}
+
+// ToolChoice represents the tool choice configuration
+message ToolChoice {
+  // Tool choice type
+  oneof choice {
+    // Auto tool choice
+    bool auto = 1;
+    
+    // Required tool
+    string required = 2;
+    
+    // Function tool
+    FunctionToolChoice function = 3;
+  }
+}
+
+// FunctionToolChoice represents a function tool choice
+message FunctionToolChoice {
+  // Function name
+  string name = 1;
+}
+
+// ChatCompletionResponse represents a chat completion response
+message ChatCompletionResponse {
+  // Response ID
+  string id = 1;
+  
+  // Response object type
+  string object = 2;
+  
+  // Response creation timestamp
+  int64 created = 3;
+  
+  // Model used for the response
+  string model = 4;
+  
+  // Response choices
+  repeated ChatCompletionChoice choices = 5;
+  
+  // Usage statistics
+  UsageInfo usage = 6;
+  
+  // System fingerprint
+  string system_fingerprint = 7;
+}
+
+// ChatCompletionChoice represents a chat completion choice
+message ChatCompletionChoice {
+  // Choice index
+  int32 index = 1;
+  
+  // Message in the choice
+  intellirouter.common.v1.Message message = 2;
+  
+  // Finish reason
+  string finish_reason = 3;
+  
+  // Logprobs (if requested)
+  LogprobsInfo logprobs = 4;
+}
+
+// LogprobsInfo represents logprobs information
+message LogprobsInfo {
+  // Content logprobs
+  repeated TokenLogprob content = 1;
+}
+
+// TokenLogprob represents token logprob information
+message TokenLogprob {
+  // Token
+  string token = 1;
+  
+  // Logprob
+  float logprob = 2;
+  
+  // Top logprobs
+  map<string, float> top_logprobs = 3;
+}
+
+// UsageInfo represents usage information
+message UsageInfo {
+  // Prompt tokens
+  uint32 prompt_tokens = 1;
+  
+  // Completion tokens
+  uint32 completion_tokens = 2;
+  
+  // Total tokens
+  uint32 total_tokens = 3;
+}
+
+// RouteRequestRequest is sent to route a request
+message RouteRequestRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Chat completion request
+  ChatCompletionRequest request = 2;
+  
+  // Routing options
+  RoutingRequest routing = 3;
+}
+
+// RouteRequestResponse is returned after routing a request
+message RouteRequestResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Chat completion response
+  ChatCompletionResponse response = 2;
+  
+  // Routing metadata
+  RoutingMetadata routing_metadata = 3;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 4;
+}
+
+// RouteRequestStreamResponse is streamed during request routing
+message RouteRequestStreamResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Chat completion chunk
+  ChatCompletionChunk chunk = 2;
+  
+  // Routing metadata (sent in the first chunk)
+  RoutingMetadata routing_metadata = 3;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 4;
+  
+  // Whether this is the last chunk
+  bool done = 5;
+}
+
+// ChatCompletionChunk represents a chunk of a chat completion response
+message ChatCompletionChunk {
+  // Chunk ID
+  string id = 1;
+  
+  // Chunk object type
+  string object = 2;
+  
+  // Chunk creation timestamp
+  int64 created = 3;
+  
+  // Model used for the chunk
+  string model = 4;
+  
+  // Chunk choices
+  repeated ChatCompletionChunkChoice choices = 5;
+  
+  // System fingerprint
+  string system_fingerprint = 6;
+}
+
+// ChatCompletionChunkChoice represents a choice in a chat completion chunk
+message ChatCompletionChunkChoice {
+  // Choice index
+  int32 index = 1;
+  
+  // Delta in the choice
+  ChatCompletionChunkDelta delta = 2;
+  
+  // Finish reason
+  string finish_reason = 3;
+  
+  // Logprobs (if requested)
+  LogprobsInfo logprobs = 4;
+}
+
+// ChatCompletionChunkDelta represents a delta in a chat completion chunk
+message ChatCompletionChunkDelta {
+  // Role delta
+  string role = 1;
+  
+  // Content delta
+  string content = 2;
+  
+  // Tool calls delta
+  repeated ToolCall tool_calls = 3;
+}
+
+// ToolCall represents a tool call
+message ToolCall {
+  // Tool call ID
+  string id = 1;
+  
+  // Tool call type
+  string type = 2;
+  
+  // Function call
+  FunctionCall function = 3;
+}
+
+// FunctionCall represents a function call
+message FunctionCall {
+  // Function name
+  string name = 1;
+  
+  // Function arguments (JSON string)
+  string arguments = 2;
+}
+
+// GetRoutingStrategiesRequest is sent to get the available routing strategies
+message GetRoutingStrategiesRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+}
+
+// GetRoutingStrategiesResponse is returned with the available routing strategies
+message GetRoutingStrategiesResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Available routing strategies
+  repeated StrategyInfo strategies = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}
+
+// StrategyInfo represents information about a routing strategy
+message StrategyInfo {
+  // Strategy type
+  RoutingStrategy type = 1;
+  
+  // Strategy name
+  string name = 2;
+  
+  // Strategy description
+  string description = 3;
+  
+  // Strategy configuration
+  StrategyConfig config = 4;
+  
+  // Whether the strategy is enabled
+  bool enabled = 5;
+}
+
+// StrategyConfig represents configuration for a routing strategy
+message StrategyConfig {
+  // Strategy-specific parameters
+  map<string, string> parameters = 1;
+  
+  // Fallback strategy to use if this strategy fails
+  RoutingStrategy fallback_strategy = 2;
+  
+  // Maximum number of fallback attempts
+  uint32 max_fallback_attempts = 3;
+  
+  // Whether to include models with limited status
+  bool include_limited_models = 4;
+  
+  // Whether to include models with high latency
+  bool include_high_latency_models = 5;
+  
+  // Timeout for strategy execution in milliseconds
+  uint32 timeout_ms = 6;
+}
+
+// UpdateRoutingStrategyRequest is sent to update a routing strategy configuration
+message UpdateRoutingStrategyRequest {
+  // Request context
+  intellirouter.common.v1.RequestContext context = 1;
+  
+  // Strategy type
+  RoutingStrategy type = 2;
+  
+  // Strategy configuration
+  StrategyConfig config = 3;
+  
+  // Whether to enable the strategy
+  bool enabled = 4;
+}
+
+// UpdateRoutingStrategyResponse is returned after updating a routing strategy
+message UpdateRoutingStrategyResponse {
+  // Status of the operation
+  intellirouter.common.v1.Status status = 1;
+  
+  // Updated strategy information
+  StrategyInfo strategy = 2;
+  
+  // Error details (if status is ERROR)
+  intellirouter.common.v1.ErrorDetails error = 3;
+}

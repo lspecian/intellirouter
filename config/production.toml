@@ -1,0 +1,76 @@
+# Production environment configuration for IntelliRouter
+# This file contains configuration values specific to the production environment
+
+# Environment
+environment = "production"
+
+# Server configuration
+[server]
+host = "0.0.0.0"  # Bind to all interfaces in production
+port = 8080
+max_connections = 5000  # Higher connection limit for production
+request_timeout_secs = 60  # Longer timeout for production
+cors_enabled = true
+cors_allowed_origins = ["https://example.com", "https://api.example.com"]
+
+# Model registry configuration
+[model_registry]
+# Longer cache TTL for production
+cache_ttl_secs = 7200  # 2 hours
+
+# Router configuration
+[router]
+# Use performance-optimized strategy in production
+default_strategy = "performance-optimized"
+
+# Memory configuration
+[memory]
+# Use Redis backend in production
+backend_type = "redis"
+redis_url = "redis://redis:6379/0"
+max_history_length = 200  # Longer history in production
+history_ttl_secs = 604800  # 7 days
+
+# Telemetry configuration
+[telemetry]
+log_level = "info"
+metrics_enabled = true
+tracing_enabled = true
+metrics_endpoint = "https://metrics.example.com/api/v1/metrics"
+tracing_endpoint = "https://tracing.example.com/api/v1/traces"
+
+# Authentication and authorization configuration
+[auth]
+# Enable authentication for production
+auth_enabled = true
+auth_method = "jwt"
+jwt_secret = "REPLACE_WITH_SECURE_SECRET_IN_ENVIRONMENT_VARIABLES"
+jwt_expiration_secs = 86400  # 24 hours
+
+# RAG configuration
+[rag]
+# Enable RAG for production
+enabled = true
+vector_db_url = "postgres://user:password@vectordb:5432/vectordb"
+chunk_size = 1000
+chunk_overlap = 200
+
+# Chain engine configuration
+[chain_engine]
+max_chain_length = 20  # Higher limit for production
+max_execution_time_secs = 600  # 10 minutes
+enable_caching = true
+cache_ttl_secs = 7200  # 2 hours
+
+# Persona layer configuration
+[persona_layer]
+enabled = true
+default_persona = "default"
+personas_dir = "/etc/intellirouter/personas"
+
+# Plugin SDK configuration
+[plugin_sdk]
+enabled = true
+plugins_dir = "/etc/intellirouter/plugins"
+allowed_hosts = ["api.example.com", "plugins.example.com"]
+timeout_secs = 60  # Longer timeout for production

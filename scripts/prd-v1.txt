@@ -1,0 +1,288 @@
+# Product Requirements Document: IntelliRouter
+
+**Version:** 1.0
+**Date:** May 16, 2025
+**Author:** AI Product Strategy & Systems Architecture
+
+## 1. � Problem Statement
+
+### Limitations of Existing Tools
+Current LLM gateway solutions like LiteLLM and OpenRouter offer valuable foundational capabilities for model aggregation and unified API access. However, they exhibit limitations when faced with advanced, production-grade use cases:
+
+* **Limited Orchestration:** While providing routing to various models, they often lack sophisticated orchestration capabilities for multi-step, multi-role agentic workflows (e.g., Chain-of-Experts). Implementing complex reasoning chains typically requires significant custom code on top of these gateways.
+* **Rudimentary Persona Management:** Injecting and maintaining consistent personas, especially complex Claude-style system prompts or dynamic guardrails across different models and turns, is often manual or not deeply integrated.
+* **Basic RAG Integration:** While some tools allow connections to vector stores, the fusion of RAG context with ongoing conversational memory and its seamless injection into diverse LLM backends is not a core, managed feature. This often leads to boilerplate RAG pipeline code.
+* **Static Routing Logic:** Routing is often based on simple priority or availability, lacking dynamic, programmable routing based on a richer set of criteria like real-time cost, latency, content-aware trust scores, or fine-grained model metadata (e.g., context window size, specific fine-tuning).
+* **Developer Experience Gaps:** SDKs might not fully abstract the complexities of multi-turn memory management, role-to-model mapping in agentic chains, or seamless switching between local and remote models during development and production.
+
+### The Opportunity for Programmable LLM Infrastructure
+There is a significant and growing opportunity for a new class of LLM infrastructure that addresses these limitations. IntelliRouter aims to be a **programmable LLM gateway** that unifies routing, orchestration, and agentic reasoning. It will empower developers to build sophisticated AI-native applications by:
+
+* Providing a **unified control plane** for diverse LLM backends (local, cloud, open-source, proprietary).
+* Enabling **structured, multi-step reasoning** through programmable orchestration and agentic patterns.
+* Offering **deep persona control** and context management for building highly interactive and consistent AI assistants.
+* Simplifying the integration of **Retrieval Augmented Generation (RAG)** and long-term memory.
+* Delivering an **enterprise-grade, secure, and observable platform** deployable from edge to cloud.
+
+IntelliRouter will bridge the gap between simple model proxies and complex, custom-built AI orchestration frameworks, providing a powerful, flexible, and developer-friendly solution.
+
+## 2. � Product Vision
+
+To empower developers and organizations to build next-generation AI applications by providing a **programmable, intelligent, and unified LLM gateway**. IntelliRouter will abstract the complexities of diverse LLM backends, enabling sophisticated multi-model orchestration, deep persona control, and seamless integration of memory and context.
+
+We envision IntelliRouter as the central nervous system for AI-native workflows, where:
+
+* **Routing is intelligent and programmable:** Decisions are made not just on availability but on a rich set of configurable parameters including cost, latency, trust, model capabilities, and even content-aware policies.
+* **Orchestration is declarative and powerful:** Developers can easily define and execute complex multi-step, multi-role agentic chains (Chain-of-Experts) with pluggable components.
+* **Persona and context are first-class citizens:** Claude-class personality control, dynamic guardrails, and sophisticated RAG/memory fusion are deeply integrated, ensuring consistent and contextually aware AI interactions.
+* **Developer experience is paramount:** Comprehensive SDKs, an OpenAI-compatible API, and robust telemetry simplify development, deployment, and management.
+* **Enterprise-ready:** Security, scalability (from edge to Kubernetes), and observability are built-in, supporting demanding production environments.
+
+IntelliRouter will accelerate AI innovation by making advanced LLM capabilities accessible, manageable, and composable.
+
+## 3. � Key Modules & Features
+
+### 3.1. `llm_proxy`
+* **Description:** Provides an OpenAI-compatible API endpoint (`/v1/chat/completions`, `/v1/embeddings`, etc.) for seamless integration with existing tools and applications. It handles request validation, authentication, and then forwards requests to the `router_core`.
+* **Technical Goal:** Offer a drop-in replacement for direct OpenAI API calls, supporting both streaming (SSE, WebSocket) and non-streaming responses. Ensure high throughput and low overhead.
+* **User Story:** "As an AI developer, I want to use the familiar OpenAI API schema with IntelliRouter so I can easily switch my existing applications to leverage its advanced features without major code changes."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::api::openai_proxy` (using Axum or Actix).
+    * **SDK Integration:** SDKs will transparently target this endpoint. Configuration will allow specifying the IntelliRouter base URL.
+    * Handles request parsing, initial validation, and response formatting.
+
+### 3.2. `model_registry`
+* **Description:** A dynamic registry that tracks available LLM backends, their capabilities, status, and metadata. This includes local models (Ollama, GGUF via llama.cpp, vLLM), remote APIs (OpenAI, Anthropic, Groq), and their specific attributes (e.g., context window size, supported functions, fine-tuning details, cost per token).
+* **Technical Goal:** Provide a centralized, up-to-date source of truth for model availability and characteristics, enabling intelligent routing decisions. Support for health checks and dynamic registration/deregistration of models.
+* **User Story:** "As an infrastructure engineer, I want to easily register and manage various local and cloud-based LLMs, specifying their capabilities, so the router can make optimal choices."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::models::registry`.
+    * **Storage:** Could use an in-memory store (e.g., `dashmap`) for speed, potentially backed by Redis or a configuration file for persistence.
+    * **API:** Internal API for `router_core` to query models. Potentially an admin API for managing entries.
+
+### 3.3. `router_core`
+* **Description:** The heart of IntelliRouter. It receives requests from the `llm_proxy` (or directly via internal calls from `chain_engine`) and decides which `model_registry` backend(s) to use. Routing decisions are based on programmable strategies (e.g., cost optimization, latency minimization, capability matching, round-robin, weighted selection, content-based routing) and model metadata.
+* **Technical Goal:** Implement a flexible and extensible routing engine that can execute predefined or custom routing strategies. Support for A/B testing, fallbacks, and retries.
+* **User Story:** "As a product manager, I want to define routing rules that prioritize cost-effective models for standard tasks but switch to high-capability models for complex queries, all while maintaining low latency."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::routing::core_router`.
+    * **Strategies:** Routing strategies can be implemented as pluggable Rust traits/modules, loaded via the `plugin_sdk`.
+    * Interacts heavily with `model_registry`, `persona_layer`, and `telemetry`.
+
+### 3.4. `persona_layer`
+* **Description:** Injects system prompts, few-shot examples, or guardrails before a request is sent to the target LLM. This module enables Claude-style persona management, ensuring consistent behavior, tone, and adherence to predefined instructions or ethical guidelines. Personas can be statically defined or dynamically selected/modified based on context or routing decisions.
+* **Technical Goal:** Provide robust mechanisms for prepending, appending, or modifying prompts to enforce personas and apply guardrails, compatible with various model provider requirements.
+* **User Story:** "As an AI developer building a customer service bot, I want to define a friendly and helpful persona that is consistently applied, regardless of the underlying LLM used by the router."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::processing::persona`.
+    * **Templates:** Uses a templating engine (e.g., Handlebars, MiniJinja) for dynamic prompt construction.
+    * **Integration:** Called by `router_core` or `chain_engine` before dispatching to an LLM.
+
+### 3.5. `chain_engine`
+* **Description:** Orchestrates multi-step, multi-role inference flows, akin to Chain-of-Experts or agentic systems. Developers can define chains where the output of one LLM call (or tool use) becomes the input for another, potentially involving different roles, models, or personas at each step.
+* **Technical Goal:** Implement a stateful execution engine for declarative chains. Support for parallel execution of steps, conditional logic, and error handling within chains.
+* **User Story:** "As an AI researcher, I want to design a multi-agent system where a 'Planner' agent breaks down a task, a 'Researcher' agent gathers information (via RAG), and a 'Synthesizer' agent generates the final response, with IntelliRouter managing the flow and model selection for each agent."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::orchestration::chain_engine`.
+    * **Chain Definition:** Chains can be defined via YAML, JSON, or programmatically through the SDKs.
+    * Interacts with `router_core` (to dispatch individual steps), `persona_layer`, `rag_manager`, and `memory`.
+
+### 3.6. `rag_manager`
+* **Description:** Manages Retrieval Augmented Generation. It interfaces with vector databases (ChromaDB, Weaviate) and traditional data sources to fetch relevant context. It also includes logic for chunking, embedding (can use local or remote embedding models via `router_core`), context fusion, and summarization of retrieved information before it's injected into a prompt by the `persona_layer` or `chain_engine`.
+* **Technical Goal:** Provide a seamless and efficient way to augment LLM prompts with relevant external knowledge. Optimize context window usage.
+* **User Story:** "As a developer building a Q&A system over our internal documentation, I want IntelliRouter to automatically fetch relevant document snippets and inject them into the LLM prompt to generate accurate answers."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::rag::manager`.
+    * **Connectors:** Pluggable connectors for different vector DBs and data sources.
+    * **Embedding Models:** Leverages `router_core` to access embedding models.
+
+### 3.7. `memory`
+* **Description:** Provides short-term (conversational) and long-term (agent state, user preferences) memory capabilities. Short-term memory can be managed in Redis for fast access during conversations. Long-term memory, especially for agentic systems, can leverage Redis for key-value storage and vector databases for semantic memory.
+* **Technical Goal:** Enable stateful interactions and persistent learning for AI agents and assistants. Ensure efficient storage and retrieval of contextual information.
+* **User Story:** "As a user interacting with an AI assistant powered by IntelliRouter, I expect it to remember our previous conversation history and my preferences to provide more personalized and relevant responses."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::memory::manager`.
+    * **Backend:** Redis for caching and session memory. ChromaDB/Weaviate for long-term semantic memory (via `rag_manager` for embeddings).
+    * **SDK Integration:** SDKs will provide abstractions for managing conversation history and agent state.
+
+### 3.8. `authz`
+* **Description:** Handles authentication (e.g., API key validation, JWT) and authorization (Role-Based Access Control - RBAC) for accessing IntelliRouter's API and features. Ensures secure access and isolates tenants in a multi-tenant deployment.
+* **Technical Goal:** Implement a robust and configurable security layer. Integration with external identity providers (IdPs) could be a future enhancement.
+* **User Story:** "As an administrator, I want to issue API keys with specific permissions, controlling which teams or applications can access certain models or features, and enforce rate limits."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::security::auth`.
+    * **Storage:** API keys and RBAC policies can be stored in a secure database or configuration.
+    * **Middleware:** Implemented as Axum/Actix middleware.
+
+### 3.9. `telemetry`
+* **Description:** Collects and exposes detailed telemetry data, including logs, LLM call costs, token usage (prompt, completion, total), latency per call and per step in a chain, error rates, and routing decisions. This data is crucial for monitoring, debugging, and cost optimization.
+* **Technical Goal:** Provide comprehensive observability into the system's operation. Support for exporting metrics to common monitoring systems (e.g., Prometheus, OpenTelemetry).
+* **User Story:** "As an operations engineer, I need to monitor the performance and cost of our LLM usage in real-time, identify bottlenecks, and track spending across different models and applications."
+* **Architectural Notes:**
+    * **Rust Module:** `intelli_router_core::observability::telemetry`.
+    * **Integration:** Uses libraries like `tracing` and `metrics`.
+    * **Exporters:** Pluggable exporters for different observability backends (via `plugin_sdk`).
+
+### 3.10. `plugin_sdk` (Internal & External)
+* **Description:** A system for extending IntelliRouter's functionality. This allows developers to create custom routing strategies, new model connectors (beyond initially supported ones), custom telemetry exporters, or even new types of steps for the `chain_engine`.
+* **Technical Goal:** Foster an extensible ecosystem around IntelliRouter, allowing users to tailor it to their specific needs without modifying the core codebase.
+* **User Story:** "As an advanced user with unique routing requirements, I want to develop and plug in my own custom routing strategy into IntelliRouter."
+* **Architectural Notes:**
+    * **Rust Module(s):** `intelli_router_plugins::*` (defining traits and interfaces).
+    * **Loading:** Plugins could be loaded dynamically (e.g., from WASM modules for safety/sandboxing, or compiled in if Rust-based).
+    * **Focus:** Initially, focus on Rust-based plugins for routing strategies and observability.
+
+## 4. � Developer Personas
+
+1.  **Infra Engineer (Self-Hosting GPUs):**
+    * **Needs:** Efficiently manage and route requests to a mix of local (Ollama, vLLM on their own GPUs) and remote LLMs. Maximize GPU utilization, minimize costs, and ensure high availability. Needs robust deployment options (MicroK8s, Helm).
+    * **IntelliRouter Value:** Unified interface for diverse backends, health checks, intelligent routing to optimize local resource usage, telemetry for performance monitoring.
+
+2.  **AI Developer (Building Claude-like Assistants):**
+    * **Needs:** Create highly interactive, context-aware AI assistants with consistent personalities and the ability to perform complex tasks. Requires easy system prompt injection, multi-turn memory management, and RAG for knowledge grounding.
+    * **IntelliRouter Value:** `persona_layer` for deep personality control, `memory` module for conversational history, `rag_manager` for grounding, and SDKs to simplify development.
+
+3.  **Teams Running Hybrid RAG Stacks (Local+Remote):**
+    * **Needs:** Build RAG applications that leverage both local (for privacy/cost) and powerful remote models (for complex queries). Requires seamless integration of vector stores, flexible embedding model choices, and context management across different LLMs.
+    * **IntelliRouter Value:** `rag_manager` with pluggable vector DBs, `router_core` to select appropriate embedding/generation models, `chain_engine` to orchestrate RAG pipelines.
+
+4.  **Researchers Designing Multi-Agent Systems:**
+    * **Needs:** A flexible platform to experiment with and deploy multi-agent architectures (e.g., Chain-of-Experts). Requires defining agent roles, orchestrating communication/data flow between agents, and assigning different models to different agents.
+    * **IntelliRouter Value:** `chain_engine` for multi-step orchestration, `persona_layer` to define agent behaviors, `model_registry` and `router_core` to assign specific LLMs to agent roles.
+
+## 5. � Technical Constraints
+
+* **API Conformance:** The primary API (`/v1/chat/completions`) **must** strictly conform to the OpenAI schema for request and response objects to ensure drop-in compatibility. This includes error codes and structures.
+* **Streaming Support:**
+    * Server-Sent Events (SSE) **must** be supported for streaming chat completions.
+    * WebSocket support **should** be considered for bi-directional streaming and potentially more complex interactive scenarios in the future.
+* **SDK Functionality:**
+    * SDKs (Python, TypeScript) **must** provide convenience methods for common operations (`chat`, `stream`).
+    * SDKs **must** allow for easy configuration of the IntelliRouter endpoint and API keys (auto-injection via environment variables or explicit configuration).
+    * SDKs **should** offer abstractions for mapping roles to models within chain definitions and for simulating/managing multi-turn memory for conversational context.
+* **Deployment:**
+    * The system **must** be designed to run on a single machine (edge deployment, local development).
+    * The system **must** be containerized (Docker) and deployable/scalable on Kubernetes (MicroK8s, EKS, GKE, etc.) via a Helm chart.
+    * GitOps practices should be supported for managing deployments.
+* **Core Language:** The core backend **must** be implemented in Rust using `Axum` (preferred) or `Actix` for the web framework.
+* **Memory Layer:**
+    * Redis **must** be used for caching, session management, and fast short-term memory.
+    * A vector database (ChromaDB or Weaviate) **must** be supported for RAG and long-term semantic memory. Initial support for one is sufficient, with the other as a fast follow.
+* **Configuration:** System configuration (model endpoints, routing rules, persona definitions) should be manageable via configuration files (e.g., TOML, YAML) and potentially an admin API.
+
+### 6. Runtime Architecture & Modular Strategy
+
+IntelliRouter will follow a clean modular architecture and deliver a **single compiled binary** (`intellirouter`) that can assume different functional roles at runtime via command-line flags or configuration files.
+
+#### � Modular Design Principles
+- **Clean Architecture**: Core domain logic separated from infrastructure adapters.
+- **Configurable Roles**: The same binary behaves differently depending on its assigned runtime role (e.g., router, orchestrator, summarizer).
+- **Plugin Support**: Routing strategies and prompt middleware will be hot-swappable via a plugin system (Rust traits or Wasm modules).
+
+#### � Example Roles
+
+| Role              | Modules Activated                              | Use Case                            |
+|-------------------|--------------------------------------------------|-------------------------------------|
+| `router`          | API surface + model registry + prompt injector | OpenAI-compatible interface         |
+| `orchestrator`    | Chain engine + memory + planner                 | Chain-of-Experts coordinator        |
+| `summarizer`      | Chunk processor + compression engine            | RAG memory optimizer                |
+| `rag-injector`    | Vector store + embedding retrieval              | Retrieval layer for long context    |
+| `monolith` (dev)  | All modules active                              | Local testing or air-gapped prod    |
+
+#### � Configuration Strategy
+- Runtime config provided via CLI flag (`--role orchestrator`) or config file (`config.toml`)
+- Environment override supported (`INTELLIR_ROLE=router`)
+- Deployment via Helm chart supports role-based pod assignment
+
+#### � Advantages
+- ✅ Single build artifact for all roles
+- ✅ Consistent DevOps lifecycle (CI, deploy, update)
+- ✅ Clear module boundaries aligned with open-core strategy
+- ✅ Scalable from laptop → edge node → GPU cluster
+
+## 7. � MVP Scope
+
+The Minimum Viable Product should demonstrate the core value proposition of intelligent routing, basic orchestration, and SDK usability.
+
+* **Core Functionality:**
+    * `llm_proxy`: OpenAI-compatible `/v1/chat/completions` endpoint (non-streaming and SSE streaming).
+    * `model_registry`: Support for manual registration of at least 2 backend types.
+    * `router_core`: Basic routing strategies: priority-based, round-robin.
+    * `persona_layer`: Static system prompt injection for all requests or per route.
+* **Supported Backends (Minimum 2):**
+    * One local backend: Ollama (e.g., Llama 3, Mistral).
+    * One remote API backend: OpenAI API.
+* **SDKs (Python & TypeScript):**
+    * Core methods: `chat_completions.create()` (blocking) and `chat_completions.stream()`.
+    * Basic configuration for endpoint and API key.
+    * Conceptual support for a simple `chain.run()` that executes a predefined 2-step sequence (e.g., prompt A to model 1, then its output + prompt B to model 2).
+* **Memory & RAG:**
+    * `memory`: Basic in-memory conversational history (e.g., last N turns) passed with requests. No persistent long-term memory in MVP.
+    * `rag_manager`: Rudimentary context injection from a local file/text string (no full vector DB integration in MVP, but designed for it).
+* **Deployment:**
+    * Docker container for the IntelliRouter service.
+    * Basic Helm chart for local deployment (e.g., via Minikube or MicroK8s).
+* **Auth & Telemetry:**
+    * `authz`: Simple API key authentication (single key for MVP).
+    * `telemetry`: Basic logging of requests, responses, and chosen backend. No advanced metrics export yet.
+
+## 8. � Open-Core Plan
+
+IntelliRouter will adopt an open-core model to foster community adoption while enabling sustainable development and commercialization.
+
+* **Open-Source Components (Apache 2.0 License):**
+    * `llm_proxy`: The core OpenAI-compatible API layer.
+    * `model_registry`: Basic functionality for registering and discovering models.
+    * `router_core`: Fundamental routing logic and common strategies (e.g., failover, round-robin, latency-based).
+    * `persona_layer`: Core system prompt injection and basic guardrail capabilities.
+    * `chain_engine`: Basic multi-step orchestration.
+    * `rag_manager`: Connectors for at least one open-source vector DB (e.g., ChromaDB) and basic RAG pipeline logic.
+    * SDKs (Python, TypeScript).
+    * Helm chart for self-hosting.
+    * Basic `telemetry` (logging).
+    * `plugin_sdk` interfaces.
+
+* **Monetizable / Enterprise Features (Commercial License):**
+    * **Advanced Routing Strategies:** Sophisticated cost optimization algorithms, A/B testing of routes, content-aware routing, custom policy-based routing.
+    * **Enterprise `authz`:** Multi-tenant policy engine, fine-grained RBAC, integration with SAML/OAuth2/LDAP, audit logs for security.
+    * **Web GUI for Management:** A user-friendly web interface for configuring models, defining routing rules, managing personas, visualizing chains, and monitoring telemetry.
+    * **Advanced Telemetry & Usage Metering:** Detailed cost tracking per user/project, performance dashboards, integration with enterprise monitoring tools (e.g., Datadog, New Relic), predictive scaling recommendations.
+    * **Hosted IntelliRouter Cloud Service:** A fully managed, scalable version of IntelliRouter.
+    * **Premium Connectors:** Enterprise data source connectors for `rag_manager`.
+    * **Advanced `chain_engine` Features:** Visual chain builder, versioning of chains, complex conditional logic, human-in-the-loop steps.
+    * **Enterprise Support & SLAs.**
+
+* **Recommended License:** **Apache 2.0** for the open-source core. This permissive license encourages broad adoption and contributions.
+
+## 9. � Evaluation
+
+### Performance Targets (Core Rust Service)
+* **P95 Latency (Proxy Overhead):** < 20ms for non-streaming requests (excluding LLM inference time).
+* **P95 Latency (Streaming First Token Overhead):** < 50ms for streaming requests (time from request receipt to first SSE event sent, excluding LLM time-to-first-token).
+* **Throughput:** Target handling at least 500 requests/second on modest hardware (e.g., 4-core CPU, 8GB RAM) for simple routing scenarios.
+* **Resource Usage:** Aim for low memory footprint for the core service itself.
+
+### SDK Coverage Examples
+SDKs should provide clear, idiomatic ways to interact with IntelliRouter.
+
+* **Python SDK:**
+    * `chat()`: Simple request-response.
+    * `stream()`: Handling streamed responses.
+    * `chain()`: Defining and executing a multi-step chain (e.g., `client.chains.run(name="my_expert_chain", input_data={"query": "..."})`).
+* **TypeScript SDK:**
+    * `chat()`: Promise-based request-response.
+    * `stream()`: Async iterator for streamed responses.
+    * `chain()`: Similar to Python SDK for chain execution.
+
+*(See separate code snippet immersives for examples)*
+
+### Integration Examples
+Demonstrate ease of integration with common tools and workflows.
+
+* **LangChain/LangChain.js:** Provide custom `LLM` and `ChatModel` classes for LangChain that use IntelliRouter as the backend.
+    * Example: `llm = IntelliRouterLangChain(intellirouter_url="...", api_key="...", model_kwargs={"persona_id": "support_agent"})`
+* **RooCode (Conceptual):** If RooCode involves LLM calls, show how IntelliRouter can be configured as the LLM provider.
+* **Local CLI:** A simple CLI tool (built with the SDKs) for interacting with IntelliRouter, testing routes, and inspecting model registry.
+    * Example: `intellirouter-cli chat "Hello, world!" --model "ollama/llama3" --stream`
+    * Example: `intellirouter-cli chain "summarize_and_translate" --input '{"text": "Long document...", "target_lang": "fr"}'`
+

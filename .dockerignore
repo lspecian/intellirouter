@@ -1,0 +1,44 @@
+# Git
+.git
+.gitignore
+.github
+
+# Rust
+target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# Docker
+docker-compose.yml
+.dockerignore
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation
+LICENSE
+CONTRIBUTING.md
+
+# CI/CD
+.gitlab-ci.yml
+.travis.yml
+.github/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.log
+
+# Task management
+tasks/
+scripts/

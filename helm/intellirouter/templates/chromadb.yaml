@@ -1,0 +1,74 @@
+{{- if .Values.chromadb.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "intellirouter.fullname" . }}-chromadb
+  labels:
+    {{- include "intellirouter.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chromadb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "intellirouter.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: chromadb
+  template:
+    metadata:
+      labels:
+        {{- include "intellirouter.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: chromadb
+    spec:
+      containers:
+        - name: chromadb
+          image: "{{ .Values.chromadb.image.repository }}:{{ .Values.chromadb.image.tag }}"
+          imagePullPolicy: {{ .Values.chromadb.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /chroma/chroma
+      volumes:
+        - name: data
+          {{- if .Values.chromadb.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "intellirouter.fullname" . }}-chromadb
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "intellirouter.fullname" . }}-chromadb
+  labels:
+    {{- include "intellirouter.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chromadb
+spec:
+  type: {{ .Values.chromadb.service.type }}
+  ports:
+    - port: {{ .Values.chromadb.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "intellirouter.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: chromadb
+{{- if and .Values.chromadb.persistence.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "intellirouter.fullname" . }}-chromadb
+  labels:
+    {{- include "intellirouter.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chromadb
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.chromadb.persistence.size }}
+{{- end }}
+{{- end }}

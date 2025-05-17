@@ -1,0 +1,40 @@
+# MicroK8s specific values for intellirouter
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: intellirouter.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# Use local storage for MicroK8s
+chromadb:
+  persistence:
+    enabled: true
+    size: 1Gi
+
+# Role-specific configuration
+roles:
+  - name: router
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: router
+  - name: orchestrator
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: orchestrator

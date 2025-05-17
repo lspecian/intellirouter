@@ -1,0 +1,93 @@
+# Default configuration for IntelliRouter
+# This file contains the default configuration values for all environments
+
+# Environment (development, testing, production)
+environment = "development"
+
+# Server configuration
+[server]
+host = "127.0.0.1"
+port = 8080
+max_connections = 1000
+request_timeout_secs = 30
+cors_enabled = false
+cors_allowed_origins = ["*"]
+
+# Model registry configuration
+[model_registry]
+default_provider = "openai"
+cache_ttl_secs = 3600
+
+# LLM providers
+[[model_registry.providers]]
+name = "openai"
+api_key_env = "OPENAI_API_KEY"
+endpoint = "https://api.openai.com/v1"
+default_model = "gpt-4o"
+available_models = ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
+timeout_secs = 60
+max_retries = 3
+settings = {}
+
+[[model_registry.providers]]
+name = "anthropic"
+api_key_env = "ANTHROPIC_API_KEY"
+endpoint = "https://api.anthropic.com/v1"
+default_model = "claude-3-opus-20240229"
+available_models = ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"]
+timeout_secs = 60
+max_retries = 3
+settings = {}
+
+# Router configuration
+[router]
+default_strategy = "cost-optimized"
+available_strategies = ["cost-optimized", "performance-optimized", "round-robin", "fallback"]
+rules = {}
+
+# Memory configuration
+[memory]
+backend_type = "memory"
+max_history_length = 100
+history_ttl_secs = 86400  # 24 hours
+
+# Telemetry configuration
+[telemetry]
+log_level = "info"
+metrics_enabled = true
+tracing_enabled = true
+
+# Authentication and authorization configuration
+[auth]
+auth_enabled = false
+auth_method = "api_key"
+jwt_expiration_secs = 3600  # 1 hour
+api_key_header = "X-API-Key"
+api_keys = []
+
+# RAG configuration
+[rag]
+enabled = false
+default_embedding_model = "text-embedding-3-small"
+chunk_size = 1000
+chunk_overlap = 200
+
+# Chain engine configuration
+[chain_engine]
+max_chain_length = 10
+max_execution_time_secs = 300  # 5 minutes
+enable_caching = true
+cache_ttl_secs = 3600  # 1 hour
+
+# Persona layer configuration
+[persona_layer]
+enabled = true
+default_persona = "default"
+personas_dir = "config/personas"
+
+# Plugin SDK configuration
+[plugin_sdk]
+enabled = false
+plugins_dir = "plugins"
+allowed_hosts = []
+timeout_secs = 30

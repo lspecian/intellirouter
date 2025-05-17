@@ -1,0 +1,26 @@
+# Clippy configuration for IntelliRouter
+# See https://doc.rust-lang.org/clippy/configuration.html for more options
+
+# Allow up to 10 arguments in functions
+too-many-arguments-threshold = 10
+
+# Configure the cognitive complexity threshold
+cognitive-complexity-threshold = 25
+
+# Configure the type complexity threshold
+type-complexity-threshold = 250
+
+# Configure the cyclomatic complexity threshold
+cyclomatic-complexity-threshold = 25
+
+# Configure the doc comment threshold
+doc-valid-idents = ["IntelliRouter", "LLM", "RAG", "OpenAI", "Ollama"]
+
+# Configure the allowed lints
+allow-unwrap-in-tests = true
+
+# Configure the disallowed methods
+disallowed-methods = []
+
+# Configure the disallowed types
+disallowed-types = []

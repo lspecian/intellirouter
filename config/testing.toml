@@ -1,0 +1,54 @@
+# Testing environment configuration for IntelliRouter
+# This file contains configuration values specific to the testing environment
+
+# Environment
+environment = "testing"
+
+# Server configuration
+[server]
+port = 8081  # Use a different port for testing
+
+# Telemetry configuration
+[telemetry]
+log_level = "info"
+metrics_enabled = true
+tracing_enabled = true
+
+# Memory configuration
+[memory]
+# Use in-memory backend for testing
+backend_type = "memory"
+# Shorter TTL for testing
+history_ttl_secs = 3600  # 1 hour
+
+# Authentication and authorization configuration
+[auth]
+# Enable authentication for testing
+auth_enabled = true
+auth_method = "api_key"
+api_keys = ["test-api-key-1", "test-api-key-2"]
+
+# RAG configuration
+[rag]
+# Enable RAG for testing
+enabled = true
+# Use a test vector database
+vector_db_url = "memory://"
+
+# Chain engine configuration
+[chain_engine]
+# Lower timeout for testing
+max_execution_time_secs = 60  # 1 minute
+enable_caching = true
+
+# Persona layer configuration
+[persona_layer]
+# Enable persona layer for testing
+enabled = true
+
+# Plugin SDK configuration
+[plugin_sdk]
+# Enable plugins for testing
+enabled = true
+# Allow localhost for testing
+allowed_hosts = ["localhost"]

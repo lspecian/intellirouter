@@ -1,0 +1,45 @@
+# Development environment configuration for IntelliRouter
+# This file contains configuration values specific to the development environment
+
+# Environment
+environment = "development"
+
+# Server configuration
+[server]
+port = 8080
+
+# Telemetry configuration
+[telemetry]
+log_level = "debug"
+metrics_enabled = true
+tracing_enabled = true
+
+# Memory configuration
+[memory]
+# Use in-memory backend for development
+backend_type = "memory"
+
+# Authentication and authorization configuration
+[auth]
+# Disable authentication for development
+auth_enabled = false
+
+# RAG configuration
+[rag]
+# Disable RAG for development by default
+enabled = false
+
+# Chain engine configuration
+[chain_engine]
+# Enable caching for development
+enable_caching = true
+
+# Persona layer configuration
+[persona_layer]
+# Enable persona layer for development
+enabled = true
+
+# Plugin SDK configuration
+[plugin_sdk]
+# Disable plugins for development by default
+enabled = false

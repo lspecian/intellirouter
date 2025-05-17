@@ -1,0 +1,66 @@
+# GKE specific values for intellirouter
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: "gce"
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "intellirouter-ip"
+    networking.gke.io/managed-certificates: "intellirouter-cert"
+    kubernetes.io/ingress.allow-http: "false"
+  hosts:
+    - host: intellirouter.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: intellirouter-tls
+      hosts:
+        - intellirouter.example.com
+
+resources:
+  limits:
+    cpu: 2000m
+    memory: 2Gi
+  requests:
+    cpu: 1000m
+    memory: 1Gi
+
+# Use persistent disks for GKE
+chromadb:
+  persistence:
+    enabled: true
+    size: 10Gi
+
+# Use node selectors for GKE
+nodeSelector:
+  cloud.google.com/gke-nodepool: intellirouter-pool
+
+# Role-specific configuration with more replicas for production
+roles:
+  - name: router
+    replicas: 2
+    config:
+      INTELLIROUTER_ROLE: router
+  - name: orchestrator
+    replicas: 2
+    config:
+      INTELLIROUTER_ROLE: orchestrator
+  - name: model_registry
+    replicas: 2
+    config:
+      INTELLIROUTER_ROLE: model_registry
+  - name: chain_engine
+    replicas: 2
+    config:
+      INTELLIROUTER_ROLE: chain_engine
+
+# Enable autoscaling for production
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80

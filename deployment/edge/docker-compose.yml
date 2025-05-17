@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  intellirouter:
+    build: ../../
+    ports:
+      - "8080:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=production
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=info
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      # Add your API keys here or use .env file
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ../../config:/app/config
+    depends_on:
+      - redis
+    command: [ "run", "--role", "all" ]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    command: [ "redis-server", "--appendonly", "yes" ]
+
+volumes:
+  redis-data:

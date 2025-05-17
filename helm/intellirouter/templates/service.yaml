@@ -1,0 +1,20 @@
+{{- range .Values.roles }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "intellirouter.fullname" $ }}-{{ .name }}
+  labels:
+    {{- include "intellirouter.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ .name }}
+spec:
+  type: {{ $.Values.service.type }}
+  ports:
+    - port: {{ $.Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "intellirouter.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ .name }}
+{{- end }}

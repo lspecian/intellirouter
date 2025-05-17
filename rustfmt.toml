@@ -1,0 +1,38 @@
+# Rustfmt configuration for IntelliRouter
+# See https://rust-lang.github.io/rustfmt/ for more options
+
+# Maximum width of each line
+max_width = 100
+
+# Number of spaces per tab
+tab_spaces = 4
+
+# Use field initialization shorthand when possible
+use_field_init_shorthand = true
+
+# Merge imports from the same module
+imports_granularity = "Module"
+
+# Format comments
+comment_width = 100
+
+# Format code blocks in doc comments
+format_code_in_doc_comments = true
+
+# Format macro invocations
+format_macro_matchers = true
+
+# Format macro bodies
+format_macro_bodies = true
+
+# Reorder impl items
+reorder_impl_items = true
+
+# Group imports by module
+group_imports = "StdExternalCrate"
+
+# Newline style
+newline_style = "Unix"
+
+# Wrap comments to fit within max_width
+wrap_comments = true

@@ -1,27 +1,186 @@
 # IntelliRouter
 
-IntelliRouter is a flexible LLM orchestration system built in Rust that provides intelligent routing and management of language model interactions.
+IntelliRouter is a programmable LLM gateway that provides an OpenAI-compatible API endpoint for chat completions, supporting both streaming and non-streaming responses. It's designed to be highly extensible and configurable, with support for various deployment scenarios.
 
 ## Features
 
-- **OpenAI-Compatible API**: Provides a drop-in replacement endpoint for chat completions
-- **Intelligent Routing**: Dynamically routes requests between multiple LLM backends (Ollama, OpenAI) based on configurable rules
-- **Persona Layer**: Injects system prompts and guardrails to shape model behavior
-- **Chain Engine**: Supports multi-step, multi-role inference flows for complex reasoning tasks
-- **Memory Management**: Maintains conversation history and agent state across interactions
-- **RAG Integration**: Augments prompts with relevant context from vector databases
-- **Security**: Built-in authentication and authorization mechanisms
-- **Observability**: Detailed telemetry and monitoring for all LLM interactions
-- **Extensibility**: Plugin system for adding custom functionality
+- **Programmable Routing**: Route requests to different LLM backends based on customizable strategies
+- **Extensibility**: Plugin system for custom routing strategies, model connectors, and telemetry exporters
+- **Multi-Role Deployment**: Support for deploying as separate services with secure IPC
+- **Client SDKs**: Python, TypeScript, and Rust libraries for easy integration
+- **Deployment Options**: Configurations for various environments from edge to cloud
 
 ## Getting Started
 
-*Documentation coming soon*
+### Prerequisites
 
-## License
+- Rust 1.70 or later
+- Docker (for containerized deployment)
+- Kubernetes (for production deployment)
 
-*License information to be added*
+### Installation
+
+#### From Source
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/intellirouter.git
+   cd intellirouter
+   ```
+
+2. Build the project:
+   ```bash
+   cargo build --release
+   ```
+
+3. Run the router:
+   ```bash
+   ./target/release/intellirouter --role router
+   ```
+
+#### Using Docker
+
+1. Build the Docker image:
+   ```bash
+   docker build -t intellirouter .
+   ```
+
+2. Run the container:
+   ```bash
+   docker run -p 8000:8000 -e INTELLIROUTER_ROLE=router intellirouter
+   ```
+
+#### Using Docker Compose
+
+1. Start all services:
+   ```bash
+   docker-compose up -d
+   ```
+
+### Configuration
+
+IntelliRouter can be configured using a TOML file. Create a `config.toml` file in the `config` directory:
+
+```toml
+[server]
+host = "0.0.0.0"
+port = 8000
+
+[logging]
+level = "info"
+
+[redis]
+host = "localhost"
+port = 6379
+
+[chromadb]
+host = "localhost"
+port = 8001
+```
+
+### Deployment Options
+
+#### Local Development
+
+For local development, you can use Docker Compose:
+
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+
+#### Edge Deployment
+
+For edge deployment, use the edge-specific Docker Compose file:
+
+```bash
+cd deployment/edge
+docker-compose up -d
+```
+
+#### Kubernetes Deployment
+
+For Kubernetes deployment, use Helm:
+
+```bash
+# MicroK8s
+cd deployment/microk8s
+helm install intellirouter ../../helm/intellirouter -f values.yaml
+
+# EKS
+cd deployment/eks
+helm install intellirouter ../../helm/intellirouter -f values.yaml
+
+# GKE
+cd deployment/gke
+helm install intellirouter ../../helm/intellirouter -f values.yaml
+```
+
+## Architecture
+
+IntelliRouter consists of several modules:
+
+- **LLM Proxy**: OpenAI-compatible API endpoint
+- **Model Registry**: Tracks available LLM backends
+- **Router Core**: Routes requests to appropriate model backends
+- **Persona Layer**: Injects system prompts and guardrails
+- **Chain Engine**: Orchestrates multi-step inference flows
+- **Memory**: Provides short-term and long-term memory capabilities
+- **RAG Manager**: Manages Retrieval Augmented Generation
+- **Authentication**: Handles API key validation and RBAC
+- **Telemetry**: Collects logs, costs, and usage metrics
+- **Plugin SDK**: Provides extensibility for custom components
+
+## SDKs
+
+IntelliRouter provides SDKs for easy integration:
+
+- [Python SDK](sdk/python/README.md)
+- [TypeScript SDK](sdk/typescript/README.md)
+- [Rust SDK](sdk/rust/README.md)
+
+## HTTP API
+
+IntelliRouter provides an OpenAI-compatible HTTP API:
+
+### Chat Completions
+
+```
+POST /v1/chat/completions
+```
+
+Request:
+```json
+{
+  "model": "gpt-3.5-turbo",
+  "messages": [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "Hello!"}
+  ]
+}
+```
+
+Response:
+```json
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "Hello! How can I assist you today?"
+    },
+    "finish_reason": "stop"
+  }]
+}
+```
 
 ## Contributing
 
-*Contribution guidelines to be added*
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
