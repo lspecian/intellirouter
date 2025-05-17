@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install build dependencies
 RUN apt-get update && \
-    apt-get install -y pkg-config libssl-dev && \
+    apt-get install -y pkg-config libssl-dev build-essential g++ && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
