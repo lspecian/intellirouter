@@ -2,7 +2,8 @@
 
 use super::*;
 use futures::StreamExt;
-use mockito::{mock, server_url};
+// Use the public API instead of the private module
+use mockito;
 use serde_json::json;
 use std::sync::Arc;
 use std::time::Duration;

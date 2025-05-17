@@ -7,8 +7,8 @@ use std::time::{Duration, Instant};
 use crate::modules::chain_engine::chain_definition::{
     Chain, ChainStep, ComparisonOperator, Condition, DependencyType, Role, StepDependency, StepType,
 };
-use crate::modules::chain_engine::core::{ChainContext, ChainEngine, StepExecutor, StepResult};
 use crate::modules::chain_engine::error::ChainResult;
+use crate::modules::chain_engine::{ChainContext, ChainEngine, StepExecutor, StepResult};
 use async_trait::async_trait;
 
 /// Mock step executor for testing
