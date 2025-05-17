@@ -7,11 +7,11 @@ use std::sync::Arc;
 use super::auth::{AuthContext, AuthManager};
 use super::rbac::{check_permission, RbacManager};
 
-pub async fn auth_middleware<B>(
+pub async fn auth_middleware(
     State(auth_manager): State<Arc<AuthManager>>,
     State(rbac_manager): State<Arc<RbacManager>>,
-    mut request: Request<B>,
-    next: Next<B>,
+    mut request: Request<axum::body::Body>,
+    next: Next,
 ) -> Result<Response, StatusCode> {
     // Extract API key from Authorization header
     let auth_header = request
@@ -60,12 +60,12 @@ pub async fn auth_middleware<B>(
     Ok(next.run(request).await)
 }
 
-pub async fn require_permission<B>(
+pub async fn require_permission(
     permission: &'static str,
     State(rbac_manager): State<Arc<RbacManager>>,
     auth_context: AuthContext,
-    request: Request<B>,
-    next: Next<B>,
+    request: Request<axum::body::Body>,
+    next: Next,
 ) -> Result<Response, StatusCode> {
     // Check permission
     let has_permission = check_permission(&auth_context, &rbac_manager, permission)

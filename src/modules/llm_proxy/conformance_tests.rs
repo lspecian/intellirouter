@@ -34,6 +34,8 @@ mod tests {
                 cors_allowed_origins: vec![],
             },
             shared: Arc::new(Mutex::new(SharedState::new())),
+            telemetry: None,
+            cost_calculator: None,
         };
 
         create_router(app_state)

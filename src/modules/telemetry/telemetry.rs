@@ -41,6 +41,7 @@ pub struct RoutingMetrics {
 }
 
 /// Manager for telemetry data
+#[derive(Debug)]
 pub struct TelemetryManager {
     /// Name of the service
     pub service_name: String,

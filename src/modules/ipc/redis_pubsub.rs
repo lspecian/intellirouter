@@ -4,7 +4,7 @@
 //! for asynchronous communication between IntelliRouter modules.
 
 use async_trait::async_trait;
-use futures::Stream;
+use futures::{Stream, StreamExt};
 use redis::aio::ConnectionManager;
 use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
@@ -15,6 +15,7 @@ use tokio::sync::Mutex;
 use tokio_stream::wrappers::ReceiverStream;
 
 use crate::modules::ipc::{IpcError, IpcResult};
+use std::future::Future;
 
 /// Channel naming convention for Redis pub/sub channels
 ///
@@ -100,10 +101,17 @@ pub struct Message {
     pub payload: Vec<u8>,
 }
 
+/// Trait for subscription delegates
+pub trait SubscriptionDelegate: Send + Sync {
+    /// Get the next message from the subscription
+    fn next_message(&self) -> IpcResult<Option<Message>>;
+}
+
 /// Subscription to a Redis channel
 pub struct Subscription {
     pubsub: Arc<Mutex<redis::aio::PubSub>>,
     channel: String,
+    delegate: Option<Box<dyn SubscriptionDelegate>>,
 }
 
 impl Subscription {
@@ -112,19 +120,64 @@ impl Subscription {
         Self {
             pubsub: Arc::new(Mutex::new(pubsub)),
             channel,
+            delegate: None,
+        }
+    }
+
+    /// Create a new subscription that delegates to an authenticated subscription
+    pub fn new_delegated(delegate: Box<dyn SubscriptionDelegate>) -> Self {
+        // For the delegated subscription, we don't actually need a real PubSub
+        // We'll just use a placeholder that will never be used
+        // since we're only using the delegate's next_message implementation
+
+        // Create a dummy channel name
+        let channel = "delegated".to_string();
+
+        // Create a new subscription with the delegate
+        // We'll use a special marker in the channel name to indicate this is a delegated subscription
+
+        // Create a dummy PubSub that won't be used
+        // This is a workaround to avoid creating a real Redis PubSub object
+        // We'll use a placeholder that will never be used
+        let dummy_pubsub = tokio::task::block_in_place(|| {
+            // Create a runtime for async operations
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+
+            // Run the async code in the runtime
+            rt.block_on(async {
+                let client = redis::Client::open("redis://localhost").unwrap();
+                let conn = client.get_async_connection().await.unwrap();
+                conn.into_pubsub()
+            })
+        });
+
+        Self {
+            pubsub: Arc::new(Mutex::new(dummy_pubsub)),
+            channel,
+            delegate: Some(delegate),
         }
     }
 
     /// Get the next message from the subscription
     pub async fn next_message(&self) -> IpcResult<Option<Message>> {
+        // If we have a delegate, use it
+        if let Some(delegate) = &self.delegate {
+            return delegate.next_message();
+        }
+
+        // Otherwise, use the standard implementation
         let mut pubsub = self.pubsub.lock().await;
-        match pubsub.get_message().await {
-            Ok(msg) => {
+        let mut stream = pubsub.on_message();
+        match stream.next().await {
+            Some(msg) => {
                 let channel = msg.get_channel_name().to_string();
                 let payload = msg.get_payload_bytes().to_vec();
                 Ok(Some(Message { channel, payload }))
             }
-            Err(err) => Err(IpcError::Transport(err.into())),
+            None => Ok(None),
         }
     }
 
@@ -135,14 +188,13 @@ impl Subscription {
         let channel = self.channel.clone();
 
         tokio::spawn(async move {
-            loop {
-                let result = {
-                    let mut pubsub_guard = pubsub.lock().await;
-                    pubsub_guard.get_message().await
-                };
+            // Lock the pubsub for the entire task
+            let mut pubsub_guard = pubsub.lock().await;
+            let mut stream = pubsub_guard.on_message();
 
-                match result {
-                    Ok(msg) => {
+            loop {
+                match stream.next().await {
+                    Some(msg) => {
                         let channel = msg.get_channel_name().to_string();
                         let payload = msg.get_payload_bytes().to_vec();
                         let message = Message { channel, payload };
@@ -150,8 +202,7 @@ impl Subscription {
                             break;
                         }
                     }
-                    Err(err) => {
-                        let _ = tx.send(Err(IpcError::Transport(err.into()))).await;
+                    None => {
                         break;
                     }
                 }
@@ -212,7 +263,7 @@ impl RedisClient for RedisClientImpl {
             .arg(message)
             .query_async(&mut conn)
             .await
-            .map_err(|e| IpcError::Transport(e.into()))?;
+            .map_err(|e| IpcError::Connection(format!("Redis error: {}", e)))?;
         Ok(())
     }
 
@@ -227,7 +278,7 @@ impl RedisClient for RedisClientImpl {
         pubsub
             .subscribe(channel)
             .await
-            .map_err(|e| IpcError::Transport(e.into()))?;
+            .map_err(|e| IpcError::Connection(format!("Redis error: {}", e)))?;
 
         Ok(Subscription::new(pubsub, channel.to_string()))
     }
@@ -243,7 +294,7 @@ impl RedisClient for RedisClientImpl {
         pubsub
             .psubscribe(pattern)
             .await
-            .map_err(|e| IpcError::Transport(e.into()))?;
+            .map_err(|e| IpcError::Connection(format!("Redis error: {}", e)))?;
 
         Ok(Subscription::new(pubsub, pattern.to_string()))
     }

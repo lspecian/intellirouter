@@ -103,7 +103,7 @@ impl MemoryEventPublisher {
         event: ConversationUpdatedEvent,
     ) -> IpcResult<()> {
         let channel = ChannelName::new("memory", "chain_engine", "conversation_updated");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -115,7 +115,7 @@ impl MemoryEventPublisher {
         event: ConversationHistoryRetrievedEvent,
     ) -> IpcResult<()> {
         let channel = ChannelName::new("memory", "chain_engine", "conversation_history_retrieved");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -168,7 +168,7 @@ impl ConversationUpdatedSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ConversationUpdatedEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ConversationUpdatedEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -185,7 +185,7 @@ impl ConversationHistoryRetrievedSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ConversationHistoryRetrievedEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ConversationHistoryRetrievedEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -221,11 +221,11 @@ impl AllMemoryEventsSubscription {
 
             match channel_name.event_type() {
                 "conversation_updated" => {
-                    let event = ConversationUpdatedEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(MemoryEvent::ConversationUpdated(event)))
                 }
                 "conversation_history_retrieved" => {
-                    let event = ConversationHistoryRetrievedEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(MemoryEvent::ConversationHistoryRetrieved(event)))
                 }
                 _ => {

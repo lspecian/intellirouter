@@ -21,8 +21,8 @@ use tracing::debug;
 use uuid::Uuid;
 
 use super::{
-    formatting::{self, generate_contextual_response},
-    server::AppState,
+    formatting::{self},
+    telemetry_integration::AppState,
 };
 
 /// OpenAI API chat completion request
@@ -318,24 +318,18 @@ fn create_validation_error(message: &str, param: Option<&str>) -> ApiError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::modules::llm_proxy::{Provider, ServerConfig, SharedState};
+    use crate::modules::telemetry::{CostCalculator, TelemetryManager};
     use std::sync::Arc;
-    use tokio::sync::Mutex;
 
     #[tokio::test]
     async fn test_chat_completions() {
         // Create test app state
+        let telemetry = Arc::new(TelemetryManager::new_for_testing());
+        let cost_calculator = Arc::new(CostCalculator::new());
+
         let app_state = AppState {
-            provider: Provider::OpenAI,
-            config: ServerConfig {
-                host: "127.0.0.1".to_string(),
-                port: 8080,
-                max_connections: 100,
-                request_timeout_secs: 30,
-                cors_enabled: false,
-                cors_allowed_origins: vec![],
-            },
-            shared: Arc::new(Mutex::new(SharedState::new())),
+            telemetry,
+            cost_calculator,
         };
 
         // Create test request
@@ -385,17 +379,12 @@ mod tests {
     #[tokio::test]
     async fn test_chat_completions_with_parameters() {
         // Create test app state
+        let telemetry = Arc::new(TelemetryManager::new_for_testing());
+        let cost_calculator = Arc::new(CostCalculator::new());
+
         let app_state = AppState {
-            provider: Provider::OpenAI,
-            config: ServerConfig {
-                host: "127.0.0.1".to_string(),
-                port: 8080,
-                max_connections: 100,
-                request_timeout_secs: 30,
-                cors_enabled: false,
-                cors_allowed_origins: vec![],
-            },
-            shared: Arc::new(Mutex::new(SharedState::new())),
+            telemetry,
+            cost_calculator,
         };
 
         // Test with high temperature
@@ -472,7 +461,7 @@ mod tests {
         ];
 
         for (input, expected_substring) in test_cases {
-            let response = generate_contextual_response(input);
+            let response = formatting::generate_contextual_response(input);
             assert!(
                 response.contains(expected_substring),
                 "Response for '{}' should contain '{}', but got: '{}'",
@@ -524,17 +513,12 @@ mod tests {
     #[tokio::test]
     async fn test_chat_completions_stream() {
         // Create test app state
+        let telemetry = Arc::new(TelemetryManager::new_for_testing());
+        let cost_calculator = Arc::new(CostCalculator::new());
+
         let app_state = AppState {
-            provider: Provider::OpenAI,
-            config: ServerConfig {
-                host: "127.0.0.1".to_string(),
-                port: 8080,
-                max_connections: 100,
-                request_timeout_secs: 30,
-                cors_enabled: false,
-                cors_allowed_origins: vec![],
-            },
-            shared: Arc::new(Mutex::new(SharedState::new())),
+            telemetry,
+            cost_calculator,
         };
 
         // Create test request
@@ -618,17 +602,12 @@ mod tests {
     #[tokio::test]
     async fn test_chat_completions_validation_failure() {
         // Create test app state
+        let telemetry = Arc::new(TelemetryManager::new_for_testing());
+        let cost_calculator = Arc::new(CostCalculator::new());
+
         let app_state = AppState {
-            provider: Provider::OpenAI,
-            config: ServerConfig {
-                host: "127.0.0.1".to_string(),
-                port: 8080,
-                max_connections: 100,
-                request_timeout_secs: 30,
-                cors_enabled: false,
-                cors_allowed_origins: vec![],
-            },
-            shared: Arc::new(Mutex::new(SharedState::new())),
+            telemetry,
+            cost_calculator,
         };
 
         // Test cases for validation failures

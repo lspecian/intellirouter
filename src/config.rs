@@ -16,8 +16,7 @@ use config::{Config as ConfigFile, Environment as ConfigEnvironment, File};
 use dotenv::dotenv;
 use serde::{Deserialize, Serialize};
 use toml;
-
-use crate::modules::telemetry::LogLevel;
+use tracing::Level as LogLevel;
 
 /// Environment type for configuration profiles
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
@@ -238,10 +237,10 @@ impl TelemetryConfig {
     /// Convert string log level to LogLevel enum
     pub fn log_level(&self) -> Result<LogLevel, String> {
         match self.log_level.to_lowercase().as_str() {
-            "debug" => Ok(LogLevel::Debug),
-            "info" => Ok(LogLevel::Info),
-            "warning" | "warn" => Ok(LogLevel::Warning),
-            "error" => Ok(LogLevel::Error),
+            "debug" => Ok(LogLevel::DEBUG),
+            "info" => Ok(LogLevel::INFO),
+            "warning" | "warn" => Ok(LogLevel::WARN),
+            "error" => Ok(LogLevel::ERROR),
             _ => Err(format!("Invalid log level: {}", self.log_level)),
         }
     }

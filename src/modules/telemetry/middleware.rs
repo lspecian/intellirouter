@@ -11,10 +11,10 @@ use uuid::Uuid;
 use super::telemetry::TelemetryManager;
 
 /// Middleware for logging HTTP requests and responses
-pub async fn telemetry_middleware<B>(
+pub async fn telemetry_middleware(
     State(telemetry): State<Arc<TelemetryManager>>,
-    request: Request<B>,
-    next: Next<B>,
+    request: Request<axum::body::Body>,
+    next: Next,
 ) -> Result<Response, StatusCode> {
     // Generate a request ID
     let request_id = Uuid::new_v4().to_string();

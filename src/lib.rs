@@ -8,7 +8,7 @@ pub mod cli;
 pub mod config;
 pub mod modules;
 
-#[cfg(test)]
+// Make test_utils available for both unit tests and integration tests
 pub mod test_utils;
 
 // Re-exports of commonly used items

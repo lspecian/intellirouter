@@ -71,7 +71,7 @@ pub enum Status {
 }
 
 /// Represents error details
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ErrorDetails {
     pub code: String,
     pub message: String,
@@ -251,38 +251,107 @@ impl GrpcChainEngineClient {
 impl ChainEngineClient for GrpcChainEngineClient {
     async fn execute_chain(
         &self,
-        chain_id: Option<String>,
-        chain: Option<Chain>,
-        input: String,
-        variables: HashMap<String, String>,
-        stream: bool,
-        timeout_seconds: Option<u32>,
+        _chain_id: Option<String>,
+        _chain: Option<Chain>,
+        _input: String,
+        _variables: HashMap<String, String>,
+        _stream: bool,
+        _timeout_seconds: Option<u32>,
     ) -> IpcResult<ChainExecutionResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement execute_chain using gRPC client")
+        // Stub implementation for now
+        Ok(ChainExecutionResponse {
+            execution_id: "stub-execution-id".to_string(),
+            status: Status::Success,
+            output: "This is a stub chain execution response.".to_string(),
+            error: None,
+            start_time: chrono::Utc::now(),
+            end_time: chrono::Utc::now(),
+            step_results: vec![StepResult {
+                step_id: "stub-step-1".to_string(),
+                status: Status::Success,
+                input: "Input for step 1".to_string(),
+                output: "Output from step 1".to_string(),
+                error: None,
+                start_time: chrono::Utc::now(),
+                end_time: chrono::Utc::now(),
+                tokens: 10,
+                model: "stub-model".to_string(),
+                metadata: HashMap::new(),
+            }],
+            total_tokens: 10,
+            metadata: HashMap::new(),
+        })
     }
 
-    async fn get_chain_status(&self, execution_id: &str) -> IpcResult<ChainStatusResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement get_chain_status using gRPC client")
+    async fn get_chain_status(&self, _execution_id: &str) -> IpcResult<ChainStatusResponse> {
+        // Stub implementation for now
+        Ok(ChainStatusResponse {
+            execution_id: "stub-execution-id".to_string(),
+            status: Status::Success,
+            current_step_id: Some("stub-step-1".to_string()),
+            completed_steps: 1,
+            total_steps: 3,
+            error: None,
+            start_time: chrono::Utc::now(),
+            update_time: chrono::Utc::now(),
+        })
     }
 
-    async fn cancel_chain_execution(&self, execution_id: &str) -> IpcResult<CancelChainResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement cancel_chain_execution using gRPC client")
+    async fn cancel_chain_execution(&self, _execution_id: &str) -> IpcResult<CancelChainResponse> {
+        // Stub implementation for now
+        Ok(CancelChainResponse {
+            execution_id: "stub-execution-id".to_string(),
+            success: true,
+            error: None,
+        })
     }
 
     async fn stream_chain_execution(
         &self,
-        chain_id: Option<String>,
-        chain: Option<Chain>,
-        input: String,
-        variables: HashMap<String, String>,
-        timeout_seconds: Option<u32>,
+        _chain_id: Option<String>,
+        _chain: Option<Chain>,
+        _input: String,
+        _variables: HashMap<String, String>,
+        _timeout_seconds: Option<u32>,
     ) -> IpcResult<Pin<Box<dyn Stream<Item = Result<ChainExecutionEvent, tonic::Status>> + Send>>>
     {
-        // Implementation would use the generated gRPC client
-        todo!("Implement stream_chain_execution using gRPC client")
+        // Stub implementation for now
+        let events = vec![
+            Ok(ChainExecutionEvent {
+                event_type: EventType::StepStarted,
+                execution_id: "stub-execution-id".to_string(),
+                timestamp: chrono::Utc::now(),
+                data: ChainExecutionEventData::StepStarted {
+                    step_id: "stub-step-1".to_string(),
+                    step_index: 0,
+                    input: "Input for step 1".to_string(),
+                },
+            }),
+            Ok(ChainExecutionEvent {
+                event_type: EventType::StepCompleted,
+                execution_id: "stub-execution-id".to_string(),
+                timestamp: chrono::Utc::now(),
+                data: ChainExecutionEventData::StepCompleted {
+                    step_id: "stub-step-1".to_string(),
+                    step_index: 0,
+                    output: "Output from step 1".to_string(),
+                    tokens: 10,
+                },
+            }),
+            Ok(ChainExecutionEvent {
+                event_type: EventType::ChainCompleted,
+                execution_id: "stub-execution-id".to_string(),
+                timestamp: chrono::Utc::now(),
+                data: ChainExecutionEventData::ChainCompleted {
+                    output: "Final chain output".to_string(),
+                    total_tokens: 10,
+                    execution_time_ms: 100,
+                },
+            }),
+        ];
+
+        let stream = futures::stream::iter(events);
+        Ok(Box::pin(stream))
     }
 }
 

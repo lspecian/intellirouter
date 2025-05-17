@@ -98,7 +98,7 @@ impl ChainEngineEventPublisher {
         event: ChainExecutionCompletedEvent,
     ) -> IpcResult<()> {
         let channel = ChannelName::new("chain_engine", "router_core", "chain_execution_completed");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -110,7 +110,7 @@ impl ChainEngineEventPublisher {
         event: ChainExecutionFailedEvent,
     ) -> IpcResult<()> {
         let channel = ChannelName::new("chain_engine", "router_core", "chain_execution_failed");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -122,7 +122,7 @@ impl ChainEngineEventPublisher {
         event: ChainStepCompletedEvent,
     ) -> IpcResult<()> {
         let channel = ChannelName::new("chain_engine", "router_core", "chain_step_completed");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -244,7 +244,7 @@ impl ChainExecutionCompletedSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ChainExecutionCompletedEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ChainExecutionCompletedEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -261,7 +261,7 @@ impl ChainExecutionFailedSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ChainExecutionFailedEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ChainExecutionFailedEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -278,7 +278,7 @@ impl ChainStepCompletedSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ChainStepCompletedEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ChainStepCompletedEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -317,15 +317,15 @@ impl AllChainEngineEventsSubscription {
 
             match channel_name.event_type() {
                 "chain_execution_completed" => {
-                    let event = ChainExecutionCompletedEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(ChainEngineEvent::ChainExecutionCompleted(event)))
                 }
                 "chain_execution_failed" => {
-                    let event = ChainExecutionFailedEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(ChainEngineEvent::ChainExecutionFailed(event)))
                 }
                 "chain_step_completed" => {
-                    let event = ChainStepCompletedEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(ChainEngineEvent::ChainStepCompleted(event)))
                 }
                 _ => {

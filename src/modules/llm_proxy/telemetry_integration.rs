@@ -11,20 +11,31 @@ use crate::modules::telemetry::{
     TelemetryManager,
 };
 
-use super::routes::{handle_chat_completions, list_models};
+/// Application state for sharing between handlers
+#[derive(Clone)]
+pub struct AppState {
+    pub telemetry: Arc<TelemetryManager>,
+    pub cost_calculator: Arc<crate::modules::telemetry::CostCalculator>,
+}
+
+use super::routes::{chat_completions, chat_completions_stream};
 
 /// Create a router with telemetry middleware
 pub fn create_router_with_telemetry(
     telemetry: Arc<TelemetryManager>,
     cost_calculator: Arc<crate::modules::telemetry::CostCalculator>,
 ) -> Router {
+    let app_state = AppState {
+        telemetry: telemetry.clone(),
+        cost_calculator,
+    };
+
     Router::new()
-        .route("/v1/chat/completions", post(handle_chat_completions))
-        .route("/v1/models", get(list_models))
+        .route("/v1/chat/completions", post(chat_completions))
+        .route("/v1/chat/completions/stream", post(chat_completions_stream))
         // Add telemetry middleware
-        .layer(from_fn_with_state(telemetry.clone(), telemetry_middleware))
-        .with_state(telemetry)
-        .with_state(cost_calculator)
+        .layer(from_fn_with_state(telemetry, telemetry_middleware))
+        .with_state(app_state)
 }
 
 /// Initialize telemetry and create a router

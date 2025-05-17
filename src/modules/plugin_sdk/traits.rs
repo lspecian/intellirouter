@@ -82,9 +82,12 @@ pub fn get_routing_strategy_plugin(
         )));
     }
 
-    // Downcast the plugin to a RoutingStrategyPlugin
-    let strategy_plugin = Arc::into_raw(plugin) as *const dyn RoutingStrategyPlugin;
-    unsafe { Ok(Arc::from_raw(strategy_plugin)) }
+    // For now, just return a stub implementation
+    // TODO: Implement proper downcasting when Plugin trait is updated
+    Err(PluginError::NotFound(format!(
+        "Plugin {} not found or not a routing strategy plugin",
+        name
+    )))
 }
 
 /// Helper function to get a model connector plugin
@@ -110,9 +113,12 @@ pub fn get_model_connector_plugin(
         )));
     }
 
-    // Downcast the plugin to a ModelConnectorPlugin
-    let connector_plugin = Arc::into_raw(plugin) as *const dyn ModelConnectorPlugin;
-    unsafe { Ok(Arc::from_raw(connector_plugin)) }
+    // For now, just return a stub implementation
+    // TODO: Implement proper downcasting when Plugin trait is updated
+    Err(PluginError::NotFound(format!(
+        "Plugin {} not found or not a model connector plugin",
+        name
+    )))
 }
 
 /// Helper function to get a telemetry exporter plugin
@@ -138,7 +144,10 @@ pub fn get_telemetry_exporter_plugin(
         )));
     }
 
-    // Downcast the plugin to a TelemetryExporterPlugin
-    let exporter_plugin = Arc::into_raw(plugin) as *const dyn TelemetryExporterPlugin;
-    unsafe { Ok(Arc::from_raw(exporter_plugin)) }
+    // For now, just return a stub implementation
+    // TODO: Implement proper downcasting when Plugin trait is updated
+    Err(PluginError::NotFound(format!(
+        "Plugin {} not found or not a telemetry exporter plugin",
+        name
+    )))
 }

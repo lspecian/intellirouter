@@ -172,19 +172,28 @@ async fn init_telemetry_components(
 
 /// Create the Axum router with all routes
 pub fn create_router(state: AppState) -> Router {
-    Router::new()
+    // Create a basic router without state first
+    let router = Router::new()
         // Health check endpoint
-        .route("/health", get(health_check))
-        // OpenAI-compatible endpoints
-        .route("/v1/chat/completions", post(routes::chat_completions))
-        // Streaming endpoint
-        .route(
-            "/v1/chat/completions/stream",
-            post(routes::chat_completions_stream),
+        .route("/health", get(health_check));
+
+    // If telemetry is available, create a router with telemetry state
+    if let (Some(telemetry), Some(cost_calculator)) = (state.telemetry, state.cost_calculator) {
+        // Create telemetry state
+        let telemetry_state = telemetry_integration::AppState {
+            telemetry,
+            cost_calculator,
+        };
+
+        // Create router with telemetry state
+        telemetry_integration::create_router_with_telemetry(
+            telemetry_state.telemetry.clone(),
+            telemetry_state.cost_calculator.clone(),
         )
-        // WebSocket endpoint
-        .route("/v1/chat/completions/ws", get(websocket::ws_handler))
-        .with_state(state)
+    } else {
+        // Return the basic router without state
+        router
+    }
 }
 
 /// Health check endpoint

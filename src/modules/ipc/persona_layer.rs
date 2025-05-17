@@ -213,61 +213,142 @@ impl GrpcPersonaLayerClient {
 impl PersonaLayerClient for GrpcPersonaLayerClient {
     async fn create_persona(
         &self,
-        name: &str,
-        description: &str,
-        system_prompt: &str,
-        response_format: Option<&str>,
-        metadata: HashMap<String, String>,
-        tags: Vec<String>,
+        _name: &str,
+        _description: &str,
+        _system_prompt: &str,
+        _response_format: Option<&str>,
+        _metadata: HashMap<String, String>,
+        _tags: Vec<String>,
     ) -> IpcResult<Persona> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement create_persona using gRPC client")
+        // Stub implementation for now
+        Ok(Persona {
+            id: "stub-persona".to_string(),
+            name: "Stub Persona".to_string(),
+            description: "A stub persona for testing".to_string(),
+            system_prompt: "You are a helpful assistant.".to_string(),
+            response_format: None,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+            metadata: HashMap::new(),
+            tags: vec!["stub".to_string()],
+            version: VersionInfo {
+                major: 1,
+                minor: 0,
+                patch: 0,
+            },
+        })
     }
 
-    async fn get_persona(&self, persona_id: &str) -> IpcResult<Persona> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement get_persona using gRPC client")
+    async fn get_persona(&self, _persona_id: &str) -> IpcResult<Persona> {
+        // Stub implementation for now
+        Ok(Persona {
+            id: "stub-persona".to_string(),
+            name: "Stub Persona".to_string(),
+            description: "A stub persona for testing".to_string(),
+            system_prompt: "You are a helpful assistant.".to_string(),
+            response_format: None,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+            metadata: HashMap::new(),
+            tags: vec!["stub".to_string()],
+            version: VersionInfo {
+                major: 1,
+                minor: 0,
+                patch: 0,
+            },
+        })
     }
 
     async fn update_persona(
         &self,
-        persona_id: &str,
-        name: Option<&str>,
-        description: Option<&str>,
-        system_prompt: Option<&str>,
-        response_format: Option<&str>,
-        metadata: Option<HashMap<String, String>>,
-        tags: Option<Vec<String>>,
+        _persona_id: &str,
+        _name: Option<&str>,
+        _description: Option<&str>,
+        _system_prompt: Option<&str>,
+        _response_format: Option<&str>,
+        _metadata: Option<HashMap<String, String>>,
+        _tags: Option<Vec<String>>,
     ) -> IpcResult<Persona> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement update_persona using gRPC client")
+        // Stub implementation for now
+        Ok(Persona {
+            id: "stub-persona".to_string(),
+            name: "Updated Stub Persona".to_string(),
+            description: "An updated stub persona for testing".to_string(),
+            system_prompt: "You are a helpful assistant.".to_string(),
+            response_format: None,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+            metadata: HashMap::new(),
+            tags: vec!["stub".to_string(), "updated".to_string()],
+            version: VersionInfo {
+                major: 1,
+                minor: 0,
+                patch: 0,
+            },
+        })
     }
 
-    async fn delete_persona(&self, persona_id: &str) -> IpcResult<()> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement delete_persona using gRPC client")
+    async fn delete_persona(&self, _persona_id: &str) -> IpcResult<()> {
+        // Stub implementation for now
+        Ok(())
     }
 
     async fn list_personas(
         &self,
-        limit: Option<u32>,
-        offset: Option<u32>,
-        tag_filter: Option<Vec<String>>,
+        _limit: Option<u32>,
+        _offset: Option<u32>,
+        _tag_filter: Option<Vec<String>>,
     ) -> IpcResult<ListPersonasResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement list_personas using gRPC client")
+        // Stub implementation for now
+        Ok(ListPersonasResponse {
+            personas: vec![Persona {
+                id: "stub-persona".to_string(),
+                name: "Stub Persona".to_string(),
+                description: "A stub persona for testing".to_string(),
+                system_prompt: "You are a helpful assistant.".to_string(),
+                response_format: None,
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+                metadata: HashMap::new(),
+                tags: vec!["stub".to_string()],
+                version: VersionInfo {
+                    major: 1,
+                    minor: 0,
+                    patch: 0,
+                },
+            }],
+            total_count: 1,
+        })
     }
 
     async fn apply_persona(
         &self,
-        persona_id: Option<&str>,
-        persona: Option<Persona>,
-        request: &str,
-        additional_context: Option<&str>,
-        include_description: bool,
+        _persona_id: Option<&str>,
+        _persona: Option<Persona>,
+        _request: &str,
+        _additional_context: Option<&str>,
+        _include_description: bool,
     ) -> IpcResult<ApplyPersonaResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement apply_persona using gRPC client")
+        // Stub implementation for now
+        Ok(ApplyPersonaResponse {
+            personalized_request: "This is a request processed with a stub persona.".to_string(),
+            applied_persona: Persona {
+                id: "stub-persona".to_string(),
+                name: "Stub Persona".to_string(),
+                description: "A stub persona for testing".to_string(),
+                system_prompt: "You are a helpful assistant.".to_string(),
+                response_format: None,
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+                metadata: HashMap::new(),
+                tags: vec!["stub".to_string()],
+                version: VersionInfo {
+                    major: 1,
+                    minor: 0,
+                    patch: 0,
+                },
+            },
+        })
     }
 }
 
@@ -292,17 +373,21 @@ impl GrpcRAGPersonaIntegrationClient {
 impl RAGPersonaIntegrationClient for GrpcRAGPersonaIntegrationClient {
     async fn augment_persona_request(
         &self,
-        persona_id: &str,
-        request: &str,
-        top_k: Option<u32>,
-        min_score: Option<f32>,
-        metadata_filter: Option<HashMap<String, String>>,
-        include_citations: bool,
-        max_context_length: Option<u32>,
-        context_template: Option<&str>,
+        _persona_id: &str,
+        _request: &str,
+        _top_k: Option<u32>,
+        _min_score: Option<f32>,
+        _metadata_filter: Option<HashMap<String, String>>,
+        _include_citations: bool,
+        _max_context_length: Option<u32>,
+        _context_template: Option<&str>,
     ) -> IpcResult<AugmentPersonaRequestResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement augment_persona_request using gRPC client")
+        // Stub implementation for now
+        Ok(AugmentPersonaRequestResponse {
+            augmented_request: "This is a request augmented with RAG content.".to_string(),
+            persona_id: "stub-persona".to_string(),
+            document_count: 3,
+        })
     }
 }
 

@@ -6,7 +6,7 @@
 //! The module provides a flexible and extensible framework for implementing
 //! different routing strategies.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -21,13 +21,13 @@ use crate::modules::model_registry::{
 };
 
 #[cfg(test)]
-mod tests;
+mod unit_tests;
 
 pub mod registry_integration;
 pub mod retry;
 pub mod router;
 pub mod strategies;
-pub mod tests;
+// Tests are in the tests directory
 
 // Re-export types for easier access
 pub use registry_integration::RegistryIntegration;
@@ -577,7 +577,7 @@ impl Default for RouterConfig {
 
 /// Trait for routing strategies
 #[async_trait]
-pub trait RoutingStrategyTrait: Send + Sync {
+pub trait RoutingStrategyTrait: Send + Sync + std::fmt::Debug {
     /// Get the strategy name
     fn name(&self) -> &'static str;
 
@@ -657,7 +657,7 @@ pub trait Router: Send + Sync {
 /// Initialize the router with the specified configuration
 pub fn init(config: RouterConfig) -> Result<(), RouterError> {
     // Get the global registry
-    let registry = crate::modules::model_registry::global_registry().get_registry();
+    let registry = crate::modules::model_registry::global_registry().registry();
     let mut router = RouterImpl::new(config.clone(), registry)?;
     router.init(config)
 }
@@ -673,7 +673,7 @@ pub async fn route_request(request: &str) -> Result<String, RouterError> {
     let routing_request = RoutingRequest::new(chat_request);
 
     // Get the router
-    let registry = crate::modules::model_registry::global_registry().get_registry();
+    let registry = crate::modules::model_registry::global_registry().registry();
     let router = RouterImpl::new(RouterConfig::default(), registry)?;
 
     // Route the request

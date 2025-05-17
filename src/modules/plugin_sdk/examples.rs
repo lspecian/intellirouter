@@ -9,10 +9,9 @@ use std::sync::Arc;
 use crate::modules::model_registry::connectors::StreamingResponse;
 use crate::modules::model_registry::{
     ChatCompletionRequest, ChatCompletionResponse, ConnectorConfig, ConnectorError, ModelConnector,
+    ModelMetadata,
 };
-use crate::modules::router_core::{
-    ModelMetadata, RouterError, RoutingRequest, RoutingStrategyTrait,
-};
+use crate::modules::router_core::{RouterError, RoutingRequest, RoutingStrategyTrait};
 
 use super::registry::{Plugin, PluginError, PluginType};
 use super::traits::{
@@ -55,6 +54,17 @@ impl Plugin for ExampleRoutingStrategyPlugin {
     fn shutdown(&self) -> Result<(), PluginError> {
         // Shutdown logic here
         Ok(())
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn clone(&self) -> Box<dyn Plugin> {
+        Box::new(Self {
+            name: self.name.clone(),
+            version: self.version.clone(),
+        })
     }
 }
 
@@ -108,6 +118,17 @@ impl Plugin for ExampleModelConnectorPlugin {
         // Shutdown logic here
         Ok(())
     }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn clone(&self) -> Box<dyn Plugin> {
+        Box::new(Self {
+            name: self.name.clone(),
+            version: self.version.clone(),
+        })
+    }
 }
 
 impl ModelConnectorPlugin for ExampleModelConnectorPlugin {
@@ -156,6 +177,17 @@ impl Plugin for ExampleTelemetryExporterPlugin {
     fn shutdown(&self) -> Result<(), PluginError> {
         // Shutdown logic here
         Ok(())
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn clone(&self) -> Box<dyn Plugin> {
+        Box::new(Self {
+            name: self.name.clone(),
+            version: self.version.clone(),
+        })
     }
 }
 

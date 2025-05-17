@@ -269,6 +269,19 @@ pub fn validate_condition(
                 return Err(ChainError::VariableNotFound(variable.clone()));
             }
         }
+        Condition::Comparison { left, right, .. } => {
+            // Validate both sides of the comparison
+            if !variables.contains_key(left) {
+                return Err(ChainError::VariableNotFound(left.clone()));
+            }
+            if !variables.contains_key(right) {
+                return Err(ChainError::VariableNotFound(right.clone()));
+            }
+        }
+        Condition::Expression { .. } => {
+            // Expressions are validated at runtime
+            // No static validation needed
+        }
         Condition::And { conditions } => {
             for cond in conditions {
                 validate_condition(cond, variables)?;

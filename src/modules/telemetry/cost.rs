@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 /// Cost calculator for LLM API calls
+#[derive(Debug)]
 pub struct CostCalculator {
     /// Cost per 1K tokens for input (prompt) by model
     input_costs: RwLock<HashMap<String, f64>>,

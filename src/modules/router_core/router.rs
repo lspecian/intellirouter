@@ -5,8 +5,11 @@
 
 use std::collections::{HashMap, HashSet};
 use std::hash::{DefaultHasher, Hash, Hasher};
+use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
+
+use crate::modules::router_core::RegistryIntegration;
 
 use lru::LruCache;
 use tracing::{debug, error, info, warn};
@@ -28,6 +31,7 @@ use super::{
 };
 
 /// Router implementation
+#[derive(Debug)]
 pub struct RouterImpl {
     /// Router configuration
     config: RouterConfig,
@@ -74,7 +78,9 @@ impl RouterImpl {
             registry,
             registry_integration,
             metrics: Mutex::new(HashMap::new()),
-            cache: Mutex::new(LruCache::new(config.max_cache_size)),
+            cache: Mutex::new(LruCache::new(
+                NonZeroUsize::new(config.max_cache_size).unwrap(),
+            )),
             retry_manager,
             degraded_service_handler,
         };
@@ -175,7 +181,7 @@ impl RouterImpl {
                     // Create response
                     let response = self.create_response(request, model, metadata).await?;
 
-                    Ok(response)
+                    Ok::<RoutingResponse, RouterError>(response)
                 },
                 &format!("strategy {}", strategy_name),
             )

@@ -68,6 +68,12 @@ pub trait Plugin: Send + Sync {
 
     /// Shutdown the plugin
     fn shutdown(&self) -> Result<(), PluginError>;
+
+    /// Get the plugin as Any for downcasting
+    fn as_any(&self) -> &dyn std::any::Any;
+
+    /// Clone the plugin
+    fn clone(&self) -> Box<dyn Plugin>;
 }
 
 /// Registry for managing plugins

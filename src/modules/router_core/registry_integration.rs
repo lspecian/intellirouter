@@ -14,6 +14,7 @@ use crate::modules::model_registry::{
 use super::{RouterError, RoutingRequest};
 
 /// Integration between Router Core and Model Registry
+#[derive(Debug)]
 pub struct RegistryIntegration {
     /// Reference to the model registry
     registry: Arc<ModelRegistry>,

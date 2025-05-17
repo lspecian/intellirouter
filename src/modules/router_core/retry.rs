@@ -172,6 +172,7 @@ impl Default for DegradedServiceMode {
 }
 
 /// Circuit breaker
+#[derive(Debug)]
 pub struct CircuitBreaker {
     /// Configuration
     config: CircuitBreakerConfig,
@@ -290,6 +291,7 @@ impl CircuitBreaker {
 }
 
 /// Retry manager
+#[derive(Debug)]
 pub struct RetryManager {
     /// Retry policy
     policy: RetryPolicy,
@@ -475,6 +477,7 @@ impl RetryManager {
 }
 
 /// Degraded service handler
+#[derive(Debug)]
 pub struct DegradedServiceHandler {
     /// Degraded service mode
     mode: DegradedServiceMode,
@@ -504,7 +507,7 @@ impl DegradedServiceHandler {
             DegradedServiceMode::DefaultModel(model_id) => {
                 // Try to use the default model
                 debug!("Degraded service mode: using default model {}", model_id);
-                let model = self.registry.get_model(model_id).ok_or_else(|| {
+                let model = self.registry.get_model(model_id).map_err(|_| {
                     RouterError::NoSuitableModel(format!(
                         "Default model {} not found in degraded mode",
                         model_id

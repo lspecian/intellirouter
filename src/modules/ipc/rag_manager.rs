@@ -200,66 +200,115 @@ impl GrpcRAGManagerClient {
 impl RAGManagerClient for GrpcRAGManagerClient {
     async fn index_document(
         &self,
-        document: Document,
-        chunk_size: Option<u32>,
-        chunk_overlap: Option<u32>,
-        compute_embeddings: bool,
-        embedding_model: Option<&str>,
+        _document: Document,
+        _chunk_size: Option<u32>,
+        _chunk_overlap: Option<u32>,
+        _compute_embeddings: bool,
+        _embedding_model: Option<&str>,
     ) -> IpcResult<IndexDocumentResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement index_document using gRPC client")
+        // Stub implementation for now
+        Ok(IndexDocumentResponse {
+            document_id: "stub-document-id".to_string(),
+            chunk_count: 5,
+        })
     }
 
     async fn retrieve_documents(
         &self,
-        query: &str,
-        top_k: Option<u32>,
-        min_score: Option<f32>,
-        metadata_filter: Option<HashMap<String, String>>,
-        include_content: bool,
-        rerank: bool,
-        rerank_model: Option<&str>,
+        _query: &str,
+        _top_k: Option<u32>,
+        _min_score: Option<f32>,
+        _metadata_filter: Option<HashMap<String, String>>,
+        _include_content: bool,
+        _rerank: bool,
+        _rerank_model: Option<&str>,
     ) -> IpcResult<RetrieveDocumentsResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement retrieve_documents using gRPC client")
+        // Stub implementation for now
+        Ok(RetrieveDocumentsResponse {
+            documents: vec![ScoredDocument {
+                document: Document {
+                    id: "stub-document-1".to_string(),
+                    content: "This is a stub document for testing.".to_string(),
+                    metadata: HashMap::new(),
+                    chunks: vec![],
+                    created_at: chrono::Utc::now(),
+                    updated_at: chrono::Utc::now(),
+                    embedding: None,
+                },
+                score: 0.95,
+            }],
+        })
     }
 
     async fn augment_request(
         &self,
-        request: &str,
-        top_k: Option<u32>,
-        min_score: Option<f32>,
-        metadata_filter: Option<HashMap<String, String>>,
-        include_citations: bool,
-        max_context_length: Option<u32>,
-        context_template: Option<&str>,
+        _request: &str,
+        _top_k: Option<u32>,
+        _min_score: Option<f32>,
+        _metadata_filter: Option<HashMap<String, String>>,
+        _include_citations: bool,
+        _max_context_length: Option<u32>,
+        _context_template: Option<&str>,
     ) -> IpcResult<AugmentRequestResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement augment_request using gRPC client")
+        // Stub implementation for now
+        Ok(AugmentRequestResponse {
+            augmented_request: "This is a request augmented with RAG content.".to_string(),
+            documents: vec![ScoredDocument {
+                document: Document {
+                    id: "stub-document-1".to_string(),
+                    content: "This is a stub document for testing.".to_string(),
+                    metadata: HashMap::new(),
+                    chunks: vec![],
+                    created_at: chrono::Utc::now(),
+                    updated_at: chrono::Utc::now(),
+                    embedding: None,
+                },
+                score: 0.95,
+            }],
+        })
     }
 
     async fn get_document_by_id(
         &self,
-        document_id: &str,
-        include_chunks: bool,
+        _document_id: &str,
+        _include_chunks: bool,
     ) -> IpcResult<Document> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement get_document_by_id using gRPC client")
+        // Stub implementation for now
+        Ok(Document {
+            id: "stub-document-1".to_string(),
+            content: "This is a stub document for testing.".to_string(),
+            metadata: HashMap::new(),
+            chunks: vec![],
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+            embedding: None,
+        })
     }
 
-    async fn delete_document(&self, document_id: &str) -> IpcResult<()> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement delete_document using gRPC client")
+    async fn delete_document(&self, _document_id: &str) -> IpcResult<()> {
+        // Stub implementation for now
+        Ok(())
     }
 
     async fn list_documents(
         &self,
-        limit: Option<u32>,
-        offset: Option<u32>,
-        metadata_filter: Option<HashMap<String, String>>,
+        _limit: Option<u32>,
+        _offset: Option<u32>,
+        _metadata_filter: Option<HashMap<String, String>>,
     ) -> IpcResult<ListDocumentsResponse> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement list_documents using gRPC client")
+        // Stub implementation for now
+        Ok(ListDocumentsResponse {
+            documents: vec![Document {
+                id: "stub-document-1".to_string(),
+                content: "This is a stub document for testing.".to_string(),
+                metadata: HashMap::new(),
+                chunks: vec![],
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+                embedding: None,
+            }],
+            total_count: 1,
+        })
     }
 }
 

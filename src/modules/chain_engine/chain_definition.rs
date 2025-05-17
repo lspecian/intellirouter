@@ -292,7 +292,7 @@ pub struct ConditionalBranch {
 pub struct RetryPolicy {
     pub max_retries: u32,
     #[serde(with = "duration_serde")]
-    pub retry_interval: Duration,
+    pub retry_interval: Option<Duration>,
     pub retry_backoff_factor: f32,
     #[serde(default)]
     pub retry_on_error_codes: Vec<String>,

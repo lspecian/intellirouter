@@ -118,7 +118,7 @@ impl RouterCoreEventPublisher {
     /// Publish a model usage event
     pub async fn publish_model_usage(&self, event: ModelUsageEvent) -> IpcResult<()> {
         let channel = ChannelName::new("router_core", "model_registry", "model_usage");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -127,7 +127,7 @@ impl RouterCoreEventPublisher {
     /// Publish a model health check event
     pub async fn publish_model_health_check(&self, event: ModelHealthCheckEvent) -> IpcResult<()> {
         let channel = ChannelName::new("router_core", "model_registry", "model_health_check");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -139,7 +139,7 @@ impl RouterCoreEventPublisher {
         event: ModelRoutingDecisionEvent,
     ) -> IpcResult<()> {
         let channel = ChannelName::new("router_core", "model_registry", "model_routing_decision");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -199,7 +199,7 @@ impl ModelUsageSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ModelUsageEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ModelUsageEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -216,7 +216,7 @@ impl ModelHealthCheckSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ModelHealthCheckEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ModelHealthCheckEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -233,7 +233,7 @@ impl ModelRoutingDecisionSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ModelRoutingDecisionEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ModelRoutingDecisionEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -272,15 +272,15 @@ impl AllRouterCoreEventsSubscription {
 
             match channel_name.event_type() {
                 "model_usage" => {
-                    let event = ModelUsageEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(RouterCoreEvent::ModelUsage(event)))
                 }
                 "model_health_check" => {
-                    let event = ModelHealthCheckEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(RouterCoreEvent::ModelHealthCheck(event)))
                 }
                 "model_routing_decision" => {
-                    let event = ModelRoutingDecisionEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(RouterCoreEvent::ModelRoutingDecision(event)))
                 }
                 _ => {

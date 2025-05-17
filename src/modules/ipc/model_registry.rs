@@ -182,53 +182,248 @@ impl GrpcModelRegistryClient {
 
 #[async_trait]
 impl ModelRegistryClient for GrpcModelRegistryClient {
-    async fn register_model(&self, metadata: ModelMetadata) -> IpcResult<ModelMetadata> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement register_model using gRPC client")
+    async fn register_model(&self, _metadata: ModelMetadata) -> IpcResult<ModelMetadata> {
+        // Stub implementation for now
+        Ok(ModelMetadata {
+            id: "stub-model".to_string(),
+            name: "Stub Model".to_string(),
+            provider: "stub-provider".to_string(),
+            version: "1.0.0".to_string(),
+            model_type: ModelType::Chat,
+            status: ModelStatus::Available,
+            context_window: 4096,
+            capabilities: ModelCapabilities {
+                streaming: true,
+                function_calling: false,
+                vision: false,
+                audio: false,
+                tools: false,
+                json_mode: false,
+                parallel_function_calling: false,
+                response_format: false,
+                seed: false,
+                additional_capabilities: vec![],
+            },
+            cost_per_1k_input: 0.01,
+            cost_per_1k_output: 0.02,
+            avg_latency_ms: 100.0,
+            max_tokens_per_request: 4096,
+            max_requests_per_minute: 100,
+            metadata: std::collections::HashMap::new(),
+            tags: vec!["stub".to_string()],
+        })
     }
 
-    async fn get_model(&self, model_id: &str) -> IpcResult<ModelMetadata> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement get_model using gRPC client")
+    async fn get_model(&self, _model_id: &str) -> IpcResult<ModelMetadata> {
+        // Stub implementation for now
+        Ok(ModelMetadata {
+            id: "stub-model".to_string(),
+            name: "Stub Model".to_string(),
+            provider: "stub-provider".to_string(),
+            version: "1.0.0".to_string(),
+            model_type: ModelType::Chat,
+            status: ModelStatus::Available,
+            context_window: 4096,
+            capabilities: ModelCapabilities {
+                streaming: true,
+                function_calling: false,
+                vision: false,
+                audio: false,
+                tools: false,
+                json_mode: false,
+                parallel_function_calling: false,
+                response_format: false,
+                seed: false,
+                additional_capabilities: vec![],
+            },
+            cost_per_1k_input: 0.01,
+            cost_per_1k_output: 0.02,
+            avg_latency_ms: 100.0,
+            max_tokens_per_request: 4096,
+            max_requests_per_minute: 100,
+            metadata: std::collections::HashMap::new(),
+            tags: vec!["stub".to_string()],
+        })
     }
 
-    async fn update_model(&self, metadata: ModelMetadata) -> IpcResult<ModelMetadata> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement update_model using gRPC client")
+    async fn update_model(&self, _metadata: ModelMetadata) -> IpcResult<ModelMetadata> {
+        // Stub implementation for now
+        Ok(ModelMetadata {
+            id: "stub-model".to_string(),
+            name: "Stub Model".to_string(),
+            provider: "stub-provider".to_string(),
+            version: "1.0.0".to_string(),
+            model_type: ModelType::Chat,
+            status: ModelStatus::Available,
+            context_window: 4096,
+            capabilities: ModelCapabilities {
+                streaming: true,
+                function_calling: false,
+                vision: false,
+                audio: false,
+                tools: false,
+                json_mode: false,
+                parallel_function_calling: false,
+                response_format: false,
+                seed: false,
+                additional_capabilities: vec![],
+            },
+            cost_per_1k_input: 0.01,
+            cost_per_1k_output: 0.02,
+            avg_latency_ms: 100.0,
+            max_tokens_per_request: 4096,
+            max_requests_per_minute: 100,
+            metadata: std::collections::HashMap::new(),
+            tags: vec!["stub".to_string()],
+        })
     }
 
-    async fn remove_model(&self, model_id: &str) -> IpcResult<ModelMetadata> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement remove_model using gRPC client")
+    async fn remove_model(&self, _model_id: &str) -> IpcResult<ModelMetadata> {
+        // Stub implementation for now
+        Ok(ModelMetadata {
+            id: "stub-model".to_string(),
+            name: "Stub Model".to_string(),
+            provider: "stub-provider".to_string(),
+            version: "1.0.0".to_string(),
+            model_type: ModelType::Chat,
+            status: ModelStatus::Available,
+            context_window: 4096,
+            capabilities: ModelCapabilities {
+                streaming: true,
+                function_calling: false,
+                vision: false,
+                audio: false,
+                tools: false,
+                json_mode: false,
+                parallel_function_calling: false,
+                response_format: false,
+                seed: false,
+                additional_capabilities: vec![],
+            },
+            cost_per_1k_input: 0.01,
+            cost_per_1k_output: 0.02,
+            avg_latency_ms: 100.0,
+            max_tokens_per_request: 4096,
+            max_requests_per_minute: 100,
+            metadata: std::collections::HashMap::new(),
+            tags: vec!["stub".to_string()],
+        })
     }
 
     async fn list_models(&self) -> IpcResult<Vec<ModelMetadata>> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement list_models using gRPC client")
+        // Stub implementation for now
+        Ok(vec![ModelMetadata {
+            id: "stub-model".to_string(),
+            name: "Stub Model".to_string(),
+            provider: "stub-provider".to_string(),
+            version: "1.0.0".to_string(),
+            model_type: ModelType::Chat,
+            status: ModelStatus::Available,
+            context_window: 4096,
+            capabilities: ModelCapabilities {
+                streaming: true,
+                function_calling: false,
+                vision: false,
+                audio: false,
+                tools: false,
+                json_mode: false,
+                parallel_function_calling: false,
+                response_format: false,
+                seed: false,
+                additional_capabilities: vec![],
+            },
+            cost_per_1k_input: 0.01,
+            cost_per_1k_output: 0.02,
+            avg_latency_ms: 100.0,
+            max_tokens_per_request: 4096,
+            max_requests_per_minute: 100,
+            metadata: std::collections::HashMap::new(),
+            tags: vec!["stub".to_string()],
+        }])
     }
 
-    async fn find_models(&self, filter: ModelFilter) -> IpcResult<Vec<ModelMetadata>> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement find_models using gRPC client")
+    async fn find_models(&self, _filter: ModelFilter) -> IpcResult<Vec<ModelMetadata>> {
+        // Stub implementation for now
+        Ok(vec![ModelMetadata {
+            id: "stub-model".to_string(),
+            name: "Stub Model".to_string(),
+            provider: "stub-provider".to_string(),
+            version: "1.0.0".to_string(),
+            model_type: ModelType::Chat,
+            status: ModelStatus::Available,
+            context_window: 4096,
+            capabilities: ModelCapabilities {
+                streaming: true,
+                function_calling: false,
+                vision: false,
+                audio: false,
+                tools: false,
+                json_mode: false,
+                parallel_function_calling: false,
+                response_format: false,
+                seed: false,
+                additional_capabilities: vec![],
+            },
+            cost_per_1k_input: 0.01,
+            cost_per_1k_output: 0.02,
+            avg_latency_ms: 100.0,
+            max_tokens_per_request: 4096,
+            max_requests_per_minute: 100,
+            metadata: std::collections::HashMap::new(),
+            tags: vec!["stub".to_string()],
+        }])
     }
 
     async fn update_model_status(
         &self,
-        model_id: &str,
-        status: ModelStatus,
-        reason: &str,
+        _model_id: &str,
+        _status: ModelStatus,
+        _reason: &str,
     ) -> IpcResult<ModelMetadata> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement update_model_status using gRPC client")
+        // Stub implementation for now
+        Ok(ModelMetadata {
+            id: "stub-model".to_string(),
+            name: "Stub Model".to_string(),
+            provider: "stub-provider".to_string(),
+            version: "1.0.0".to_string(),
+            model_type: ModelType::Chat,
+            status: ModelStatus::Available,
+            context_window: 4096,
+            capabilities: ModelCapabilities {
+                streaming: true,
+                function_calling: false,
+                vision: false,
+                audio: false,
+                tools: false,
+                json_mode: false,
+                parallel_function_calling: false,
+                response_format: false,
+                seed: false,
+                additional_capabilities: vec![],
+            },
+            cost_per_1k_input: 0.01,
+            cost_per_1k_output: 0.02,
+            avg_latency_ms: 100.0,
+            max_tokens_per_request: 4096,
+            max_requests_per_minute: 100,
+            metadata: std::collections::HashMap::new(),
+            tags: vec!["stub".to_string()],
+        })
     }
 
     async fn check_model_health(
         &self,
-        model_id: &str,
-        timeout_ms: Option<u32>,
+        _model_id: &str,
+        _timeout_ms: Option<u32>,
     ) -> IpcResult<HealthCheckResult> {
-        // Implementation would use the generated gRPC client
-        todo!("Implement check_model_health using gRPC client")
+        // Stub implementation for now
+        Ok(HealthCheckResult {
+            healthy: true,
+            latency_ms: 10.0,
+            error_message: None,
+            timestamp: chrono::Utc::now(),
+            details: std::collections::HashMap::new(),
+        })
     }
 }
 

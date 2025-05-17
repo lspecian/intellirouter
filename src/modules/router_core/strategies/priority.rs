@@ -45,6 +45,7 @@ impl Default for PriorityConfig {
 }
 
 /// Priority-based routing strategy
+#[derive(Debug)]
 pub struct PriorityStrategy {
     /// Base strategy
     base: BaseStrategy,

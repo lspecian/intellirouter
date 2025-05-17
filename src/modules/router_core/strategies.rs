@@ -30,6 +30,7 @@ use super::{
 };
 
 /// Base strategy implementation providing common functionality for all routing strategies
+#[derive(Debug)]
 pub struct BaseStrategy {
     /// Strategy name
     name: &'static str,

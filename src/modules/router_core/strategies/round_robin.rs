@@ -19,6 +19,7 @@ use crate::modules::router_core::{
 };
 
 /// Round-robin routing strategy
+#[derive(Debug)]
 pub struct RoundRobinStrategy {
     /// Base strategy
     base: BaseStrategy,
@@ -117,7 +118,7 @@ impl RoutingStrategyTrait for RoundRobinStrategy {
     async fn select_model(
         &self,
         request: &RoutingRequest,
-        registry: &dyn ModelRegistry,
+        registry: &ModelRegistry,
     ) -> Result<ModelMetadata, RouterError> {
         debug!("Selecting model using round-robin strategy");
 
@@ -166,7 +167,7 @@ impl RoutingStrategyTrait for RoundRobinStrategy {
         request: &RoutingRequest,
         failed_model_id: &str,
         error: &RouterError,
-        registry: &dyn ModelRegistry,
+        registry: &ModelRegistry,
     ) -> Result<ModelMetadata, RouterError> {
         // Delegate to base strategy
         self.base

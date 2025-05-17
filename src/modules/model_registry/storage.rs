@@ -13,10 +13,26 @@ use super::types::{
 };
 
 /// Thread-safe in-memory storage for model metadata
-#[derive(Debug, Clone)]
+// Remove Debug derive since dyn ModelConnector doesn't implement Debug
+#[derive(Clone)]
 pub struct ModelRegistry {
     /// Internal storage using DashMap for thread-safe concurrent access
     models: Arc<DashMap<String, ModelMetadata>>,
+    /// Model connectors
+    connectors: Arc<DashMap<String, Arc<dyn super::connectors::ModelConnector>>>,
+}
+
+// Manual Debug implementation
+impl std::fmt::Debug for ModelRegistry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ModelRegistry")
+            .field("models", &self.models)
+            .field(
+                "connectors",
+                &format!("<{} connectors>", self.connectors.len()),
+            )
+            .finish()
+    }
 }
 
 impl ModelRegistry {
@@ -25,7 +41,27 @@ impl ModelRegistry {
         debug!("Creating new model registry");
         Self {
             models: Arc::new(DashMap::new()),
+            connectors: Arc::new(DashMap::new()),
         }
+    }
+
+    /// Register a connector for a model
+    pub fn register_connector(
+        &self,
+        model_id: &str,
+        connector: Arc<dyn super::connectors::ModelConnector>,
+    ) {
+        debug!("Registering connector for model: {}", model_id);
+        self.connectors.insert(model_id.to_string(), connector);
+    }
+
+    /// Get a connector for a model
+    pub fn get_connector(
+        &self,
+        model_id: &str,
+    ) -> Option<Arc<dyn super::connectors::ModelConnector>> {
+        debug!("Getting connector for model: {}", model_id);
+        self.connectors.get(model_id).map(|c| c.clone())
     }
 
     /// Register a new model in the registry

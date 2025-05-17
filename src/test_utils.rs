@@ -90,7 +90,6 @@ macro_rules! async_test {
 }
 
 /// Mock implementations for testing
-#[cfg(test)]
 pub mod mocks {
     use mockall::predicate::*;
     use mockall::*;
@@ -114,8 +113,13 @@ pub mod mocks {
     // Mock for model registry
     mock! {
         pub ModelRegistry {
-            pub fn get_model(&self, name: &str) -> Option<String>;
-            pub fn register_model(&self, name: &str, endpoint: &str) -> Result<(), String>;
+            pub fn new() -> Self;
+            pub fn get_model(&self, id: &str) -> Result<crate::modules::model_registry::ModelMetadata, crate::modules::model_registry::RegistryError>;
+            pub fn register_model(&self, metadata: crate::modules::model_registry::ModelMetadata) -> Result<(), crate::modules::model_registry::RegistryError>;
+            pub fn update_model(&self, metadata: crate::modules::model_registry::ModelMetadata) -> Result<(), crate::modules::model_registry::RegistryError>;
+            pub fn remove_model(&self, id: &str) -> Result<(), crate::modules::model_registry::RegistryError>;
+            pub fn list_models(&self) -> Vec<crate::modules::model_registry::ModelMetadata>;
+            pub fn find_models(&self, filter: crate::modules::model_registry::ModelFilter) -> Vec<crate::modules::model_registry::ModelMetadata>;
         }
     }
 }

@@ -91,7 +91,7 @@ impl RagManagerEventPublisher {
     /// Publish a document indexed event
     pub async fn publish_document_indexed(&self, event: DocumentIndexedEvent) -> IpcResult<()> {
         let channel = ChannelName::new("rag_manager", "persona_layer", "document_indexed");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -100,7 +100,7 @@ impl RagManagerEventPublisher {
     /// Publish a document retrieval event
     pub async fn publish_document_retrieval(&self, event: DocumentRetrievalEvent) -> IpcResult<()> {
         let channel = ChannelName::new("rag_manager", "persona_layer", "document_retrieval");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -112,7 +112,7 @@ impl RagManagerEventPublisher {
         event: ContextAugmentationEvent,
     ) -> IpcResult<()> {
         let channel = ChannelName::new("rag_manager", "persona_layer", "context_augmentation");
-        let payload = event.serialize()?;
+        let payload = EventPayload::serialize(&event)?;
         self.redis_client
             .publish(&channel.to_string(), &payload)
             .await
@@ -174,7 +174,7 @@ impl DocumentIndexedSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<DocumentIndexedEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = DocumentIndexedEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -191,7 +191,7 @@ impl DocumentRetrievalSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<DocumentRetrievalEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = DocumentRetrievalEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -208,7 +208,7 @@ impl ContextAugmentationSubscription {
     /// Get the next event from the subscription
     pub async fn next_event(&self) -> IpcResult<Option<ContextAugmentationEvent>> {
         if let Some(message) = self.subscription.next_message().await? {
-            let event = ContextAugmentationEvent::deserialize(&message.payload)?;
+            let event = EventPayload::deserialize(&message.payload)?;
             Ok(Some(event))
         } else {
             Ok(None)
@@ -247,15 +247,15 @@ impl AllRagManagerEventsSubscription {
 
             match channel_name.event_type() {
                 "document_indexed" => {
-                    let event = DocumentIndexedEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(RagManagerEvent::DocumentIndexed(event)))
                 }
                 "document_retrieval" => {
-                    let event = DocumentRetrievalEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(RagManagerEvent::DocumentRetrieval(event)))
                 }
                 "context_augmentation" => {
-                    let event = ContextAugmentationEvent::deserialize(&message.payload)?;
+                    let event = EventPayload::deserialize(&message.payload)?;
                     Ok(Some(RagManagerEvent::ContextAugmentation(event)))
                 }
                 _ => {
