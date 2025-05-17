@@ -1,300 +1,509 @@
-// IntelliRouter Entry Point
-//
-// This file contains the entry point for the IntelliRouter application,
-// which can assume different functional roles at runtime.
-
-use intellirouter::cli::{parse_args, Commands, Role};
-use intellirouter::config::TelemetryConfig;
-use intellirouter::modules::telemetry;
-use std::process;
+use std::env;
+use std::net::SocketAddr;
+use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
-use tracing::Level as LogLevel;
 
-fn main() {
-    // Parse command-line arguments and get configuration
-    let (cli, config) = parse_args();
+use clap::{Parser, Subcommand};
+use intellirouter::config::Config;
+use intellirouter::modules::authz::routes as authz_routes;
+use intellirouter::modules::chain_engine::engine::ChainEngine;
+use intellirouter::modules::ipc::chain_engine::ChainEngineClient;
+use intellirouter::modules::ipc::memory::client::MemoryClient;
+use intellirouter::modules::ipc::memory::service::MemoryService;
+use intellirouter::modules::ipc::model_registry::ModelRegistryClient;
+use intellirouter::modules::ipc::persona_layer::PersonaLayerClient;
+use intellirouter::modules::ipc::rag_manager::RagManagerClient;
+use intellirouter::modules::llm_proxy::routes as llm_proxy_routes;
+use intellirouter::modules::llm_proxy::server::LlmProxyServer;
+use intellirouter::modules::memory::manager::MemoryManager;
+use intellirouter::modules::model_registry::api::ModelRegistryApi;
+use intellirouter::modules::persona_layer::manager::PersonaLayerManager;
+use intellirouter::modules::rag_manager::manager::RagManager;
+use intellirouter::modules::router_core::router::Router;
+use intellirouter::modules::telemetry::middleware::telemetry_middleware;
+use intellirouter::modules::telemetry::telemetry::{init_telemetry, TelemetryManager};
+use tokio::sync::mpsc;
 
-    // Handle commands
-    match &cli.command {
-        Commands::Init(init_args) => {
-            if init_args.force {
-                println!("Creating default configuration files (force mode)...");
-            } else {
-                println!("Creating default configuration files...");
-            }
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+struct Cli {
+    #[command(subcommand)]
+    command: Commands,
+}
 
-            match intellirouter::config::Config::create_default_configs() {
-                Ok(_) => {
-                    println!("Default configuration files created in the 'config' directory");
-                    return;
-                }
-                Err(e) => {
-                    eprintln!("Failed to create default configuration files: {}", e);
-                    process::exit(1);
-                }
-            }
+#[derive(Subcommand)]
+enum Commands {
+    /// Run the IntelliRouter server
+    Run {
+        /// Role to run (router, orchestrator, rag-injector, summarizer, all)
+        #[arg(short, long, default_value = "all")]
+        role: Role,
+
+        /// Configuration file path
+        #[arg(short, long)]
+        config: Option<PathBuf>,
+
+        /// Environment (development, production)
+        #[arg(short, long, default_value = "development")]
+        env: String,
+    },
+    /// Generate a default configuration file
+    GenerateConfig {
+        /// Output file path
+        #[arg(short, long, default_value = "config.toml")]
+        output: PathBuf,
+
+        /// Environment (development, production)
+        #[arg(short, long, default_value = "development")]
+        env: String,
+    },
+}
+
+#[derive(Clone, Debug)]
+enum Role {
+    Router,
+    Orchestrator,
+    RagInjector,
+    Summarizer,
+    All,
+    Audit,
+}
+
+impl FromStr for Role {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "router" => Ok(Role::Router),
+            "orchestrator" => Ok(Role::Orchestrator),
+            "rag-injector" | "raginjector" => Ok(Role::RagInjector),
+            "summarizer" => Ok(Role::Summarizer),
+            "all" => Ok(Role::All),
+            "audit" => Ok(Role::Audit),
+            _ => Err(format!("Unknown role: {}", s)),
         }
+    }
+}
 
-        Commands::Validate(validate_args) => {
-            match config.validate() {
-                Ok(_) => {
-                    println!("Configuration validation successful");
-                    if validate_args.verbose {
-                        println!("Configuration details:");
-                        println!("Environment: {:?}", config.environment);
-                        println!("Server: {}:{}", config.server.host, config.server.port);
-                        // Add more details as needed
-                    }
-                    return;
-                }
-                Err(e) => {
-                    eprintln!("Configuration validation failed: {}", e);
-                    process::exit(1);
-                }
-            }
-        }
+#[tokio::main]
+async fn main() {
+    // Initialize telemetry
+    // Set up basic logging
+    TelemetryManager::setup_logging().expect("Failed to set up logging");
 
-        Commands::Run(run_args) => {
-            // Initialize telemetry
-            let log_level = match config.telemetry.log_level() {
-                Ok(level) => level,
-                Err(e) => {
-                    eprintln!("Invalid log level in configuration: {}", e);
-                    process::exit(1);
-                }
-            };
+    let cli = Cli::parse();
 
-            let telemetry_config = TelemetryConfig {
-                log_level: "info".to_string(),
-                metrics_enabled: config.telemetry.metrics_enabled,
-                tracing_enabled: config.telemetry.tracing_enabled,
-                metrics_endpoint: None,
-                tracing_endpoint: None,
-            };
+    match cli.command {
+        Commands::Run { role, config, env } => {
+            // Load configuration
+            let config_path = config.unwrap_or_else(|| {
+                let mut path = PathBuf::from("config");
+                path.push(format!("{}.toml", env));
+                path
+            });
 
-            // Initialize telemetry with a stub implementation
-            // TODO: Replace with actual telemetry initialization
-            println!(
-                "Telemetry initialized with log level: {:?}",
-                telemetry_config.log_level
-            );
+            println!("Loading configuration from {:?}", config_path);
+            let config = Config::from_file(config_path).expect("Failed to load configuration");
 
-            // Log configuration information
-            println!("Environment: {:?}", config.environment);
-            println!("Server listening on: {}", config.server.socket_addr());
+            // Initialize telemetry with configuration
+            let metrics_addr: SocketAddr = config.metrics.socket_addr();
+            let telemetry = Arc::new(TelemetryManager::new(
+                "intellirouter".to_string(),
+                env.clone(),
+                env!("CARGO_PKG_VERSION").to_string(),
+            ));
 
-            // Determine the role to assume
-            let role = run_args.role;
-
-            // Initialize the appropriate components based on the role
+            // Run the appropriate role
             match role {
-                Role::LlmProxy => {
-                    println!("Starting in LLM Proxy role");
-                    // TODO: Initialize LLM Proxy components
-                }
                 Role::Router => {
                     println!("Starting in Router role");
 
-                    // Initialize Router components
-                    if let Err(e) = intellirouter::modules::router_core::init(
-                        intellirouter::modules::router_core::RouterConfig::default(),
-                    ) {
-                        eprintln!("Failed to initialize Router: {}", e);
-                        process::exit(1);
-                    }
+                    // Create model registry client
+                    let model_registry_client =
+                        ModelRegistryClient::new(&config.model_registry.endpoint)
+                            .await
+                            .expect("Failed to create model registry client");
 
-                    // Create a tokio runtime for async operations
-                    let runtime = tokio::runtime::Runtime::new().unwrap();
+                    // Create router
+                    let router = Router::new(model_registry_client.clone());
 
-                    // Start the LLM Proxy server to handle API requests
-                    runtime.block_on(async {
-                        if let Err(e) = intellirouter::modules::llm_proxy::init(
-                            intellirouter::modules::llm_proxy::Provider::OpenAI,
-                            &config,
-                        )
+                    // Create memory client
+                    let memory_client = MemoryClient::new(&config.memory.endpoint)
                         .await
-                        {
-                            eprintln!("Failed to start LLM Proxy server: {}", e);
-                            process::exit(1);
-                        }
+                        .expect("Failed to create memory client");
 
-                        println!("Health check endpoints available at:");
-                        println!("  - /health");
-                        println!("  - /readiness");
-                        println!("  - /diagnostics");
+                    // Create chain engine client
+                    let chain_engine_client = ChainEngineClient::new(&config.chain_engine.endpoint)
+                        .await
+                        .expect("Failed to create chain engine client");
 
-                        // Keep the server running until Ctrl+C
-                        tokio::signal::ctrl_c().await.unwrap();
-                        println!("Shutting down...");
-                    });
+                    // Create LLM proxy server
+                    let llm_proxy_server =
+                        LlmProxyServer::new(router, memory_client, chain_engine_client);
+
+                    // Create app with telemetry
+                    let app = axum::Router::new()
+                        .merge(llm_proxy_routes::router(llm_proxy_server))
+                        .merge(authz_routes::router())
+                        .with_state(telemetry.clone());
+
+                    // Start server
+                    let addr = config.server.socket_addr();
+                    println!("Router listening on {}", addr);
+
+                    // Create TCP listener
+                    let listener = tokio::net::TcpListener::bind(&addr)
+                        .await
+                        .expect("Failed to bind to address");
+
+                    println!("Health check endpoints available at:");
+                    println!("  - /health");
+                    println!("  - /readiness");
+                    println!("  - /diagnostics");
+
+                    // Start server
+                    axum::serve(listener, app).await.expect("Server error");
                 }
-                Role::ChainEngine => {
-                    println!("Starting in Chain Engine role");
-                    
-                    // Create a tokio runtime for async operations
-                    let runtime = tokio::runtime::Runtime::new().unwrap();
-                    
-                    // Start the Chain Engine server
-                    runtime.block_on(async {
-                        // Initialize Chain Engine components
-                        let chain_engine_core = Arc::new(intellirouter::modules::chain_engine::core::ChainEngineCore::new());
-                        
-                        // Create health check manager
-                        let redis_url = config.memory.redis_url.clone();
-                        let router_endpoint = std::env::var("INTELLIROUTER__IPC__ROUTER_ENDPOINT")
-                            .ok();
-                        
-                        let health_manager = intellirouter::modules::health::chain_engine::create_chain_engine_health_manager(
-                            chain_engine_core,
-                            redis_url,
-                            router_endpoint,
-                        );
-                        
-                        // Create router with health check endpoints
-                        let app = health_manager.create_router();
-                        
-                        // Get socket address
-                        let addr = config.server.socket_addr();
-                        println!("Chain Engine listening on {}", addr);
-                        
-                        // Create TCP listener
-                        let listener = tokio::net::TcpListener::bind(&addr)
+                Role::Orchestrator => {
+                    println!("Starting in Orchestrator (Chain Engine) role");
+
+                    // Create model registry client
+                    let model_registry_client =
+                        ModelRegistryClient::new(&config.model_registry.endpoint)
                             .await
-                            .expect("Failed to bind to address");
-                        
-                        println!("Health check endpoints available at:");
-                        println!("  - /health");
-                        println!("  - /readiness");
-                        println!("  - /diagnostics");
-                        
-                        // Start server
-                        axum::serve(listener, app)
+                            .expect("Failed to create model registry client");
+
+                    // Create memory client
+                    let memory_client = MemoryClient::new(&config.memory.endpoint)
+                        .await
+                        .expect("Failed to create memory client");
+
+                    // Create rag manager client
+                    let rag_manager_client = RagManagerClient::new(&config.rag_manager.endpoint)
+                        .await
+                        .expect("Failed to create rag manager client");
+
+                    // Create persona layer client
+                    let persona_layer_client =
+                        PersonaLayerClient::new(&config.persona_layer.endpoint)
                             .await
-                            .expect("Server error");
-                    });
+                            .expect("Failed to create persona layer client");
+
+                    // Create chain engine
+                    let chain_engine = ChainEngine::new(
+                        model_registry_client,
+                        memory_client,
+                        rag_manager_client,
+                        persona_layer_client,
+                    );
+
+                    // Create app with telemetry
+                    let app = axum::Router::new()
+                        .merge(intellirouter::modules::chain_engine::routes::router(
+                            chain_engine,
+                        ))
+                        .with_state(telemetry.clone());
+
+                    // Start server
+                    let addr = config.chain_engine.socket_addr();
+                    println!("Chain Engine listening on {}", addr);
+
+                    // Create TCP listener
+                    let listener = tokio::net::TcpListener::bind(&addr)
+                        .await
+                        .expect("Failed to bind to address");
+
+                    println!("Health check endpoints available at:");
+                    println!("  - /health");
+                    println!("  - /readiness");
+                    println!("  - /diagnostics");
+
+                    // Start server
+                    axum::serve(listener, app).await.expect("Server error");
                 }
-                Role::RagManager => {
-                    println!("Starting in RAG Manager role");
-                    
-                    // Create a tokio runtime for async operations
-                    let runtime = tokio::runtime::Runtime::new().unwrap();
-                    
-                    // Start the RAG Manager server
-                    runtime.block_on(async {
-                        // Initialize RAG Manager components
-                        let rag_manager = Arc::new(intellirouter::modules::rag_manager::manager::RagManager::new());
-                        
-                        // Create health check manager
-                        let redis_url = config.memory.redis_url.clone();
-                        let router_endpoint = std::env::var("INTELLIROUTER__IPC__ROUTER_ENDPOINT")
-                            .ok();
-                        let vector_db_url = std::env::var("INTELLIROUTER__RAG__VECTOR_DB_URL")
-                            .ok();
-                        
-                        let health_manager = intellirouter::modules::health::rag_manager::create_rag_manager_health_manager(
+                Role::RagInjector => {
+                    println!("Starting in RAG Injector (RAG Manager) role");
+
+                    // Create model registry client
+                    let model_registry_client =
+                        ModelRegistryClient::new(&config.model_registry.endpoint)
+                            .await
+                            .expect("Failed to create model registry client");
+
+                    // Create memory client
+                    let memory_client = MemoryClient::new(&config.memory.endpoint)
+                        .await
+                        .expect("Failed to create memory client");
+
+                    // Create RAG manager
+                    let rag_manager = RagManager::new(model_registry_client, memory_client);
+
+                    // Create app with telemetry
+                    let app = axum::Router::new()
+                        .merge(intellirouter::modules::rag_manager::routes::router(
                             rag_manager,
-                            redis_url,
-                            router_endpoint,
-                            vector_db_url,
-                        );
-                        
-                        // Create router with health check endpoints
-                        let app = health_manager.create_router();
-                        
-                        // Get socket address
-                        let addr = config.server.socket_addr();
-                        println!("RAG Manager listening on {}", addr);
-                        
-                        // Create TCP listener
-                        let listener = tokio::net::TcpListener::bind(&addr)
-                            .await
-                            .expect("Failed to bind to address");
-                        
-                        println!("Health check endpoints available at:");
-                        println!("  - /health");
-                        println!("  - /readiness");
-                        println!("  - /diagnostics");
-                        
-                        // Start server
-                        axum::serve(listener, app)
-                            .await
-                            .expect("Server error");
-                    });
+                        ))
+                        .with_state(telemetry.clone());
+
+                    // Start server
+                    let addr = config.rag_manager.socket_addr();
+                    println!("RAG Manager listening on {}", addr);
+
+                    // Create TCP listener
+                    let listener = tokio::net::TcpListener::bind(&addr)
+                        .await
+                        .expect("Failed to bind to address");
+
+                    println!("Health check endpoints available at:");
+                    println!("  - /health");
+                    println!("  - /readiness");
+                    println!("  - /diagnostics");
+
+                    // Start server
+                    axum::serve(listener, app).await.expect("Server error");
                 }
-                Role::PersonaLayer => {
-                    println!("Starting in Persona Layer role");
-                    
-                    // Create a tokio runtime for async operations
-                    let runtime = tokio::runtime::Runtime::new().unwrap();
-                    
-                    // Start the Persona Layer server
-                    runtime.block_on(async {
-                        // Initialize Persona Layer components
-                        let persona_manager = Arc::new(intellirouter::modules::persona_layer::manager::PersonaManager::new());
-                        
-                        // Create health check manager
-                        let redis_url = config.memory.redis_url.clone();
-                        let router_endpoint = std::env::var("INTELLIROUTER__IPC__ROUTER_ENDPOINT")
-                            .ok();
-                        
-                        let health_manager = intellirouter::modules::health::persona_layer::create_persona_layer_health_manager(
-                            persona_manager,
-                            redis_url,
-                            router_endpoint,
-                        );
-                        
-                        // Create router with health check endpoints
-                        let app = health_manager.create_router();
-                        
-                        // Get socket address
-                        let addr = config.server.socket_addr();
-                        println!("Persona Layer listening on {}", addr);
-                        
-                        // Create TCP listener
-                        let listener = tokio::net::TcpListener::bind(&addr)
+                Role::Summarizer => {
+                    println!("Starting in Summarizer (Persona Layer) role");
+
+                    // Create model registry client
+                    let model_registry_client =
+                        ModelRegistryClient::new(&config.model_registry.endpoint)
                             .await
-                            .expect("Failed to bind to address");
-                        
-                        println!("Health check endpoints available at:");
-                        println!("  - /health");
-                        println!("  - /readiness");
-                        println!("  - /diagnostics");
-                        
-                        // Start server
-                        axum::serve(listener, app)
-                            .await
-                            .expect("Server error");
-                    });
+                            .expect("Failed to create model registry client");
+
+                    // Create memory client
+                    let memory_client = MemoryClient::new(&config.memory.endpoint)
+                        .await
+                        .expect("Failed to create memory client");
+
+                    // Create persona layer manager
+                    let persona_layer_manager =
+                        PersonaLayerManager::new(model_registry_client, memory_client);
+
+                    // Create app with telemetry
+                    let app = axum::Router::new()
+                        .merge(intellirouter::modules::persona_layer::routes::router(
+                            persona_layer_manager,
+                        ))
+                        .with_state(telemetry.clone());
+
+                    // Start server
+                    let addr = config.persona_layer.socket_addr();
+                    println!("Persona Layer listening on {}", addr);
+
+                    // Create TCP listener
+                    let listener = tokio::net::TcpListener::bind(&addr)
+                        .await
+                        .expect("Failed to bind to address");
+
+                    println!("Health check endpoints available at:");
+                    println!("  - /health");
+                    println!("  - /readiness");
+                    println!("  - /diagnostics");
+
+                    // Start server
+                    axum::serve(listener, app).await.expect("Server error");
                 }
                 Role::Audit => {
                     println!("Starting in Audit Controller role");
-                    
-                    // Create a tokio runtime for async operations
-                    let runtime = tokio::runtime::Runtime::new().unwrap();
-                    
-                    // Run the audit CLI
-                    runtime.block_on(async {
-                        if let Err(e) = intellirouter::modules::audit::cli::run_audit_cli().await {
-                            eprintln!("Audit failed: {}", e);
-                            process::exit(1);
-                        }
-                    });
+
+                    // Create app with telemetry
+                    let app = axum::Router::new()
+                        .merge(intellirouter::modules::audit::routes::router())
+                        .with_state(telemetry.clone());
+
+                    // Start server
+                    let addr = config.audit.socket_addr();
+                    println!("Audit Controller listening on {}", addr);
+
+                    // Create TCP listener
+                    let listener = tokio::net::TcpListener::bind(&addr)
+                        .await
+                        .expect("Failed to bind to address");
+
+                    println!("Health check endpoints available at:");
+                    println!("  - /health");
+                    println!("  - /readiness");
+                    println!("  - /diagnostics");
+
+                    // Start server
+                    axum::serve(listener, app).await.expect("Server error");
                 }
                 Role::All => {
-                    println!("Starting with all components enabled");
-                    println!("Health check endpoints will be available for each service on their respective ports");
-                    // TODO: Initialize all components with health checks
+                    println!("Starting all roles");
+
+                    // Create model registry API
+                    let model_registry_api = ModelRegistryApi::new();
+
+                    // Create memory manager
+                    let memory_manager =
+                        MemoryManager::new(&config.memory.backend_type, &config.memory.redis_url);
+
+                    // Create memory service
+                    let memory_service = MemoryService::new(memory_manager);
+
+                    // Start memory service
+                    let (tx, rx) = mpsc::channel(100);
+                    tokio::spawn(async move {
+                        memory_service.run(rx).await;
+                    });
+
+                    // Create memory client
+                    let memory_client = MemoryClient::from_channel(tx);
+
+                    // Create router
+                    let router = Router::new(model_registry_api.clone());
+
+                    // Create chain engine
+                    let chain_engine = ChainEngine::new(
+                        model_registry_api.clone(),
+                        memory_client.clone(),
+                        RagManagerClient::new(&config.rag_manager.endpoint)
+                            .await
+                            .expect("Failed to create rag manager client"),
+                        PersonaLayerClient::new(&config.persona_layer.endpoint)
+                            .await
+                            .expect("Failed to create persona layer client"),
+                    );
+
+                    // Create LLM proxy server
+                    let llm_proxy_server = LlmProxyServer::new(
+                        router,
+                        memory_client.clone(),
+                        ChainEngineClient::new(&config.chain_engine.endpoint)
+                            .await
+                            .expect("Failed to create chain engine client"),
+                    );
+
+                    // Create RAG manager
+                    let rag_manager =
+                        RagManager::new(model_registry_api.clone(), memory_client.clone());
+
+                    // Create persona layer manager
+                    let persona_layer_manager =
+                        PersonaLayerManager::new(model_registry_api, memory_client);
+
+                    // Create apps with telemetry
+                    let router_app = axum::Router::new()
+                        .merge(llm_proxy_routes::router(llm_proxy_server))
+                        .merge(authz_routes::router())
+                        .with_state(telemetry.clone());
+
+                    let chain_engine_app = axum::Router::new()
+                        .merge(intellirouter::modules::chain_engine::routes::router(
+                            chain_engine,
+                        ))
+                        .with_state(telemetry.clone());
+
+                    let rag_manager_app = axum::Router::new()
+                        .merge(intellirouter::modules::rag_manager::routes::router(
+                            rag_manager,
+                        ))
+                        .with_state(telemetry.clone());
+
+                    let persona_layer_app = axum::Router::new()
+                        .merge(intellirouter::modules::persona_layer::routes::router(
+                            persona_layer_manager,
+                        ))
+                        .with_state(telemetry.clone());
+
+                    // Start servers
+                    tokio::spawn(async move {
+                        let addr = config.server.socket_addr();
+                        println!("Router listening on {}", addr);
+
+                        // Create TCP listener
+                        let listener = tokio::net::TcpListener::bind(&addr)
+                            .await
+                            .expect("Failed to bind to address");
+
+                        println!("Health check endpoints available at:");
+                        println!("  - /health");
+                        println!("  - /readiness");
+                        println!("  - /diagnostics");
+
+                        // Start server
+                        axum::serve(listener, router_app)
+                            .await
+                            .expect("Server error");
+                    });
+
+                    tokio::spawn(async move {
+                        let addr = config.chain_engine.socket_addr();
+                        println!("Chain Engine listening on {}", addr);
+
+                        // Create TCP listener
+                        let listener = tokio::net::TcpListener::bind(&addr)
+                            .await
+                            .expect("Failed to bind to address");
+
+                        println!("Health check endpoints available at:");
+                        println!("  - /health");
+                        println!("  - /readiness");
+                        println!("  - /diagnostics");
+
+                        // Start server
+                        axum::serve(listener, chain_engine_app)
+                            .await
+                            .expect("Server error");
+                    });
+
+                    tokio::spawn(async move {
+                        let addr = config.rag_manager.socket_addr();
+                        println!("RAG Manager listening on {}", addr);
+
+                        // Create TCP listener
+                        let listener = tokio::net::TcpListener::bind(&addr)
+                            .await
+                            .expect("Failed to bind to address");
+
+                        println!("Health check endpoints available at:");
+                        println!("  - /health");
+                        println!("  - /readiness");
+                        println!("  - /diagnostics");
+
+                        // Start server
+                        axum::serve(listener, rag_manager_app)
+                            .await
+                            .expect("Server error");
+                    });
+
+                    tokio::spawn(async move {
+                        let addr = config.persona_layer.socket_addr();
+                        println!("Persona Layer listening on {}", addr);
+
+                        // Create TCP listener
+                        let listener = tokio::net::TcpListener::bind(&addr)
+                            .await
+                            .expect("Failed to bind to address");
+
+                        println!("Health check endpoints available at:");
+                        println!("  - /health");
+                        println!("  - /readiness");
+                        println!("  - /diagnostics");
+
+                        // Start server
+                        axum::serve(listener, persona_layer_app)
+                            .await
+                            .expect("Server error");
+                    });
+
+                    // Wait for Ctrl+C
+                    tokio::signal::ctrl_c()
+                        .await
+                        .expect("Failed to listen for Ctrl+C");
+                    println!("Shutting down...");
                 }
             }
-
-            println!("IntelliRouter initialized successfully");
-
-            // TODO: Start the appropriate services based on the role
-
-            println!(
-                "IntelliRouter is running on {}...",
-                config.server.socket_addr()
-            );
+        }
+        Commands::GenerateConfig { output, env } => {
+            println!("Generating configuration file for environment: {}", env);
+            let config = Config::default();
+            config
+                .to_file(&output)
+                .expect("Failed to write configuration file");
+            println!("Configuration file generated at {:?}", output);
         }
     }
 }
