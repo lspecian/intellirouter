@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
+use plotters::element::Sector;
 use plotters::prelude::*;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
