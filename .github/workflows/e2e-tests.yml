@@ -28,7 +28,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y pkg-config libssl-dev build-essential g++ libfontconfig1-dev
-          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
+          echo "FONTCONFIG_NO_PKG_CONFIG=1" >> $GITHUB_ENV
 
       - name: Cache dependencies
         uses: actions/cache@v3
