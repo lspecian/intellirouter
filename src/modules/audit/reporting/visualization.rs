@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
-use plotters::element::Sector;
+use plotters::element::Circle;
 use plotters::prelude::*;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
@@ -119,7 +119,7 @@ impl Visualizer<SystemTopology, String> for TopologyVisualizer {
             let color = match node.status {
                 ServiceStatus::Running => &GREEN,
                 ServiceStatus::Failed => &RED,
-                ServiceStatus::NotStarted => &GREY,
+                ServiceStatus::NotStarted => &LIGHTGRAY,
                 ServiceStatus::Starting => &YELLOW,
                 ServiceStatus::ShuttingDown => &BLUE,
                 ServiceStatus::Stopped => &BLACK,
@@ -160,7 +160,7 @@ impl Visualizer<SystemTopology, String> for TopologyVisualizer {
         for (status, color) in &[
             (ServiceStatus::Running, &GREEN),
             (ServiceStatus::Failed, &RED),
-            (ServiceStatus::NotStarted, &GREY),
+            (ServiceStatus::NotStarted, &LIGHTGRAY),
             (ServiceStatus::Starting, &YELLOW),
             (ServiceStatus::ShuttingDown, &BLUE),
             (ServiceStatus::Stopped, &BLACK),
