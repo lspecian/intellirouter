@@ -1,0 +1,94 @@
+# Minikube specific values for intellirouter
+
+service:
+  type: NodePort
+
+ingress:
+  enabled: false  # Minikube typically uses NodePort or port-forwarding
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Use default storage for Minikube
+persistence:
+  logs:
+    enabled: true
+    size: 1Gi
+    storageClass: "standard"
+  documents:
+    enabled: true
+    size: 1Gi
+    storageClass: "standard"
+  personas:
+    enabled: true
+    size: 1Gi
+    storageClass: "standard"
+
+chromadb:
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: "standard"
+
+redis:
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: "standard"
+
+# Role-specific configuration
+roles:
+  - name: router
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: Router
+  - name: orchestrator
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: ChainEngine
+  - name: rag-injector
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: RagManager
+  - name: summarizer
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: PersonaLayer
+
+# Enable Ollama for local model hosting
+ollama:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: "standard"
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+  # GPU support is disabled by default
+  gpu:
+    enabled: false
+
+# Security settings
+networkPolicy:
+  enabled: false
+
+# Installation guide
+# 1. Start Minikube with sufficient resources:
+#    minikube start --cpus 4 --memory 8192 --disk-size 20g
+# 2. Enable the ingress addon (optional):
+#    minikube addons enable ingress
+# 3. Install the Helm chart:
+#    helm install intellirouter ./helm/intellirouter -f ./helm/intellirouter/values-minikube.yaml
+# 4. Access the IntelliRouter API:
+#    minikube service intellirouter-router --url

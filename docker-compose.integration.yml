@@ -1,0 +1,242 @@
+version: '3.8'
+
+# IntelliRouter Integration Testing Configuration
+# This file defines all system roles as separate services for integration testing
+
+services:
+  # Router Service - Routes requests to appropriate LLM backends
+  router:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=testing
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=integration_test_token
+      # Test-specific configuration
+      - INTELLIROUTER__TESTING__ENABLED=true
+    volumes:
+      - ./:/app
+      - ./logs/router:/app/logs
+      - ./test_data:/app/test_data
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    depends_on:
+      - redis
+    networks:
+      - intellirouter-integration-network
+    command: [ "cargo", "run", "--", "run", "--role", "Router" ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Orchestrator Service - Manages the execution of chains and workflows
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8081:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=testing
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=integration_test_token
+      # Service discovery for integration testing
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+      # Test-specific configuration
+      - INTELLIROUTER__TESTING__ENABLED=true
+    volumes:
+      - ./:/app
+      - ./logs/orchestrator:/app/logs
+      - ./test_data:/app/test_data
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    depends_on:
+      - redis
+      - router
+    networks:
+      - intellirouter-integration-network
+    command: [ "cargo", "run", "--", "run", "--role", "ChainEngine" ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # RAG Injector Service - Manages retrieval-augmented generation
+  rag-injector:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8082:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=testing
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=integration_test_token
+      - INTELLIROUTER__RAG__ENABLED=true
+      - INTELLIROUTER__RAG__VECTOR_DB_URL=http://chromadb:8000
+      # Service discovery for integration testing
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+      # Test-specific configuration
+      - INTELLIROUTER__TESTING__ENABLED=true
+    volumes:
+      - ./:/app
+      - ./logs/rag-injector:/app/logs
+      - ./test_data:/app/test_data
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    depends_on:
+      - redis
+      - router
+      - chromadb
+    networks:
+      - intellirouter-integration-network
+    command: [ "cargo", "run", "--", "run", "--role", "RagManager" ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Summarizer Service - Manages system prompts and personas
+  summarizer:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8083:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=testing
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=integration_test_token
+      - INTELLIROUTER__PERSONA_LAYER__ENABLED=true
+      # Service discovery for integration testing
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+      # Test-specific configuration
+      - INTELLIROUTER__TESTING__ENABLED=true
+    volumes:
+      - ./:/app
+      - ./logs/summarizer:/app/logs
+      - ./test_data:/app/test_data
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    depends_on:
+      - redis
+      - router
+    networks:
+      - intellirouter-integration-network
+    command: [ "cargo", "run", "--", "run", "--role", "PersonaLayer" ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Redis - Used for memory storage and inter-service communication
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-integration-data:/data
+    networks:
+      - intellirouter-integration-network
+    command: [ "redis-server", "--appendonly", "yes" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # ChromaDB - Vector database for RAG functionality
+  chromadb:
+    image: ghcr.io/chroma-core/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-integration-data:/chroma/chroma
+    networks:
+      - intellirouter-integration-network
+    environment:
+      - ALLOW_RESET=true
+      - ANONYMIZED_TELEMETRY=false
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # Integration Test Runner - Executes the integration tests
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./:/app
+      - ./logs/test-runner:/app/logs
+      - ./test_data:/app/test_data
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    depends_on:
+      - router
+      - orchestrator
+      - rag-injector
+      - summarizer
+      - redis
+      - chromadb
+    networks:
+      - intellirouter-integration-network
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=testing
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=integration_test_token
+      # Service discovery for integration testing
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+      - INTELLIROUTER__IPC__ORCHESTRATOR_ENDPOINT=http://orchestrator:8080
+      - INTELLIROUTER__IPC__RAG_INJECTOR_ENDPOINT=http://rag-injector:8080
+      - INTELLIROUTER__IPC__SUMMARIZER_ENDPOINT=http://summarizer:8080
+      # Test-specific configuration
+      - INTELLIROUTER__TESTING__ENABLED=true
+      - RUST_BACKTRACE=1
+    command: [ "cargo", "test", "--test", "integration_test", "--", "--nocapture" ]
+
+networks:
+  intellirouter-integration-network:
+    driver: bridge
+
+volumes:
+  redis-integration-data:
+  chroma-integration-data:
+  cargo-cache:
+  target-cache:

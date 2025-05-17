@@ -1,19 +1,192 @@
 version: '3.8'
 
+# IntelliRouter Development Configuration
+# This file defines all system roles and dependencies for local development
+
 services:
-  intellirouter:
+  # Router Service - Routes requests to appropriate LLM backends
+  router:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    ports:
+      - "8080:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=development
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=dev_token
+      - RUST_BACKTRACE=1
+      # API Keys (uncomment and set as needed)
+      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      # - XAI_API_KEY=${XAI_API_KEY}
+      # - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
     volumes:
       - ./:/app
+      - ./logs/router:/app/logs
       - cargo-cache:/usr/local/cargo/registry
       - target-cache:/app/target
+    depends_on:
+      - redis
+    networks:
+      - intellirouter-dev-network
+    command: [ "cargo", "watch", "-x", "run -- run --role Router" ]
+
+  # Orchestrator Service - Manages the execution of chains and workflows
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8081:8080"
     environment:
-      - RUST_BACKTRACE=1
+      - INTELLIROUTER_ENVIRONMENT=development
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
       - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
-    command: [ "cargo", "watch", "-x", "run -- run --role all" ]
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=dev_token
+      - RUST_BACKTRACE=1
+      # Service discovery
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+    volumes:
+      - ./:/app
+      - ./logs/orchestrator:/app/logs
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    depends_on:
+      - redis
+      - router
+    networks:
+      - intellirouter-dev-network
+    command: [ "cargo", "watch", "-x", "run -- run --role ChainEngine" ]
+
+  # RAG Injector Service - Manages retrieval-augmented generation
+  rag-injector:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8082:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=development
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=dev_token
+      - INTELLIROUTER__RAG__ENABLED=true
+      - INTELLIROUTER__RAG__VECTOR_DB_URL=http://chromadb:8000
+      - RUST_BACKTRACE=1
+      # Service discovery
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+    volumes:
+      - ./:/app
+      - ./logs/rag-injector:/app/logs
+      - ./data/documents:/app/data/documents
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    depends_on:
+      - redis
+      - router
+      - chromadb
+    networks:
+      - intellirouter-dev-network
+    command: [ "cargo", "watch", "-x", "run -- run --role RagManager" ]
+
+  # Summarizer Service - Manages system prompts and personas
+  summarizer:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8083:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=development
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=dev_token
+      - INTELLIROUTER__PERSONA_LAYER__ENABLED=true
+      - RUST_BACKTRACE=1
+      # Service discovery
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+    volumes:
+      - ./:/app
+      - ./logs/summarizer:/app/logs
+      - ./data/personas:/app/data/personas
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    depends_on:
+      - redis
+      - router
+    networks:
+      - intellirouter-dev-network
+    command: [ "cargo", "watch", "-x", "run -- run --role PersonaLayer" ]
+
+  # Redis - Used for memory storage and inter-service communication
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-dev-data:/data
+    networks:
+      - intellirouter-dev-network
+    command: [ "redis-server", "--appendonly", "yes" ]
+
+  # ChromaDB - Vector database for RAG functionality
+  chromadb:
+    image: ghcr.io/chroma-core/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-dev-data:/chroma/chroma
+    networks:
+      - intellirouter-dev-network
+    environment:
+      - ALLOW_RESET=true
+      - ANONYMIZED_TELEMETRY=false
+  # Optional: Ollama for local model hosting
+  # Uncomment this section to enable Ollama
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama-dev-data:/root/.ollama
+  #   networks:
+  #     - intellirouter-dev-network
+  #   # For GPU support, uncomment the following section
+  #   # deploy:
+  #   #   resources:
+  #   #     reservations:
+  #   #       devices:
+  #   #         - driver: nvidia
+  #   #           count: 1
+  #   #           capabilities: [gpu]
+
+networks:
+  intellirouter-dev-network:
+    driver: bridge
 
 volumes:
+  redis-dev-data:
+  chroma-dev-data: # ollama-dev-data:  # Uncomment if using Ollama
+
   cargo-cache:
   target-cache:

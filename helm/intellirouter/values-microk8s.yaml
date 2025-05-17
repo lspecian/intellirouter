@@ -1,0 +1,100 @@
+# MicroK8s specific values for intellirouter
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: intellirouter.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Use local storage for MicroK8s
+persistence:
+  logs:
+    enabled: true
+    size: 1Gi
+    storageClass: "microk8s-hostpath"
+  documents:
+    enabled: true
+    size: 1Gi
+    storageClass: "microk8s-hostpath"
+  personas:
+    enabled: true
+    size: 1Gi
+    storageClass: "microk8s-hostpath"
+
+chromadb:
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: "microk8s-hostpath"
+
+redis:
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: "microk8s-hostpath"
+
+# Role-specific configuration
+roles:
+  - name: router
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: Router
+  - name: orchestrator
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: ChainEngine
+  - name: rag-injector
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: RagManager
+  - name: summarizer
+    replicas: 1
+    config:
+      INTELLIROUTER_ROLE: PersonaLayer
+
+# Enable Ollama for local model hosting
+ollama:
+  enabled: true
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: "microk8s-hostpath"
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+  # GPU support is disabled by default
+  gpu:
+    enabled: false
+
+# Security settings
+networkPolicy:
+  enabled: false
+
+# Installation guide
+# 1. Enable required MicroK8s addons:
+#    microk8s enable dns ingress storage
+# 2. Install the Helm chart:
+#    microk8s helm3 install intellirouter ./helm/intellirouter -f ./helm/intellirouter/values-microk8s.yaml
+# 3. Access the IntelliRouter API:
+#    curl http://intellirouter.local/health

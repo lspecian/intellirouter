@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliRouter Audit Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #2c3e50;
+        }
+
+        h1 {
+            text-align: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .summary {
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            margin-bottom: 10px;
+        }
+
+        .success {
+            color: #27ae60;
+        }
+
+        .warning {
+            color: #f39c12;
+        }
+
+        .error {
+            color: #e74c3c;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .timestamp {
+            text-align: center;
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-top: 40px;
+        }
+
+        .service-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .service-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .metrics-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            flex: 1;
+            min-width: 250px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>IntelliRouter Audit Report</h1>
+
+    <div class="summary">
+        <h2>Summary</h2>
+        <div class="summary-item">
+            <strong>Timestamp:</strong> {{report.timestamp}}
+        </div>
+        <div class="summary-item">
+            <strong>Status:</strong>
+            {{#if report.success}}
+            <span class="success">✅ Success</span>
+            {{else}}
+            <span class="error">❌ Failure</span>
+            {{/if}}
+        </div>
+        <div class="summary-item">
+            <strong>Services:</strong> {{report.service_statuses.length}}
+        </div>
+        <div class="summary-item">
+            <strong>Tests:</strong> {{report.test_results.length}}
+        </div>
+        <div class="summary-item">
+            <strong>Communication Tests:</strong> {{report.communication_tests.length}}
+        </div>
+        <div class="summary-item">
+            <strong>Metrics:</strong> {{report.metrics.length}}
+        </div>
+    </div>
+
+    <h2>Service Statuses</h2>
+    <div class="service-grid">
+        {{#each report.service_statuses}}
+        <div class="service-card">
+            <h3>{{@key}}</h3>
+            {{#if (eq this "Running")}}
+            <div class="success">✅ Running</div>
+            {{else if (eq this "Failed")}}
+            <div class="error">❌ Failed</div>
+            {{else if (eq this "NotStarted")}}
+            <div>⏳ Not Started</div>
+            {{else if (eq this "Starting")}}
+            <div>🔄 Starting</div>
+            {{else if (eq this "ShuttingDown")}}
+            <div>🔄 Shutting Down</div>
+            {{else if (eq this "Stopped")}}
+            <div>⏹️ Stopped</div>
+            {{/if}}
+        </div>
+        {{/each}}
+    </div>
+
+    {{#if report.successes.length}}
+    <h2>Successes</h2>
+    <ul>
+        {{#each report.successes}}
+        <li class="success">✅ {{this}}</li>
+        {{/each}}
+    </ul>
+    {{/if}}
+
+    {{#if report.warnings.length}}
+    <h2>Warnings</h2>
+    <ul>
+        {{#each report.warnings}}
+        <li class="warning">⚠️ {{this}}</li>
+        {{/each}}
+    </ul>
+    {{/if}}
+
+    {{#if report.errors.length}}
+    <h2>Errors</h2>
+    <ul>
+        {{#each report.errors}}
+        <li class="error">❌ {{this}}</li>
+        {{/each}}
+    </ul>
+    {{/if}}
+
+    {{#if report.test_results.length}}
+    <h2>Test Results</h2>
+    <table>
+        <tr>
+            <th>Test</th>
+            <th>Status</th>
+            <th>Duration (ms)</th>
+            <th>Timestamp</th>
+        </tr>
+        {{#each report.test_results}}
+        <tr>
+            <td>{{this.test_flow}}</td>
+            <td>
+                {{#if this.success}}
+                <span class="success">✅ Success</span>
+                {{else}}
+                <span class="error">❌ Failure</span>
+                {{/if}}
+            </td>
+            <td>{{this.duration_ms}}</td>
+            <td>{{this.timestamp}}</td>
+        </tr>
+        {{/each}}
+    </table>
+    {{/if}}
+
+    {{#if report.communication_tests.length}}
+    <h2>Communication Tests</h2>
+    <table>
+        <tr>
+            <th>Source</th>
+            <th>Target</th>
+            <th>Status</th>
+            <th>Response Time (ms)</th>
+        </tr>
+        {{#each report.communication_tests}}
+        <tr>
+            <td>{{this.source}}</td>
+            <td>{{this.target}}</td>
+            <td>
+                {{#if this.success}}
+                <span class="success">✅ Success</span>
+                {{else}}
+                <span class="error">❌ Failure</span>
+                {{/if}}
+            </td>
+            <td>{{this.response_time_ms}}</td>
+        </tr>
+        {{/each}}
+    </table>
+    {{/if}}
+
+    {{#if report.metric_analyses.length}}
+    <h2>Metric Analyses</h2>
+    <div class="metrics-container">
+        {{#each report.metric_analyses}}
+        <div class="metric-card">
+            <h3>{{this.service}} - {{this.metric_type}}</h3>
+            <div><strong>Value:</strong> {{this.average_value}}</div>
+            <div><strong>Description:</strong> {{this.description}}</div>
+        </div>
+        {{/each}}
+    </div>
+    {{/if}}
+
+    <div class="timestamp">
+        Report generated: {{timestamp}}
+    </div>
+</body>
+
+</html>

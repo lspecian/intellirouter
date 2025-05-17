@@ -88,9 +88,16 @@ rustls-pemfile = "1.0"
 native-tls = "0.2"
 regex = "1.10"
 
+# System information
+sys-info = "0.9"
+
 # Plugin system
 libloading = "0.8"
 semver = "1.0"
+
+# Visualization
+plotters = "0.3.5"
+wkhtmltopdf = "0.4.0"
 
 [dev-dependencies]
 # Testing

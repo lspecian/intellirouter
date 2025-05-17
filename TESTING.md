@@ -174,10 +174,31 @@ fn test_with_mock_router() {
 
 Tests are automatically run on GitHub Actions for every pull request and push to the main branch. The workflow includes:
 
-1. Running all tests
-2. Checking code coverage
-3. Running clippy for linting
-4. Checking formatting with rustfmt
+1. Running all tests (unit, integration, and end-to-end)
+2. Running ignored (longer) tests separately
+3. Checking code coverage
+4. Running clippy for linting
+5. Checking formatting with rustfmt
+6. Generating test reports
+7. Uploading test logs as artifacts
+
+For more details on the CI integration, see [CI Integration](docs/ci_integration.md).
+
+### Ignored Tests
+
+Longer tests are marked with the `#[ignore]` attribute to prevent CI timeouts. These tests can be run separately:
+
+```bash
+cargo test -- --ignored
+```
+
+The following tests are marked with the `#[ignore]` attribute:
+
+1. `test_end_to_end_request_flow`: Full end-to-end request flow through the system
+2. `test_chat_completions_endpoint`: Chat completions endpoint with HTTP request
+3. `test_multi_step_chain`: Multi-step chain execution with multiple models
+4. `test_conditional_chain`: Conditional chain execution with multiple models
+5. `test_error_handling_chain`: Error handling chain with failing model
 
 ## Best Practices
 
@@ -205,3 +226,36 @@ When adding new functionality, follow these steps:
 Tests can use the configuration in `config/testing.toml` for test-specific configuration.
 
 For tests that require external services, use the provided mock implementations or set up test fixtures.
+
+### Docker-based Integration Testing
+
+For integration testing with all system components, use the Docker Compose configuration:
+
+```bash
+docker-compose -f docker-compose.integration.yml up -d
+```
+
+This will start all required services in containers. See [Integration Testing](INTEGRATION_TESTING.md) for more details.
+
+### Test Logging
+
+Tests are configured to output detailed logs for debugging. The logs include:
+
+- File and line number information
+- Thread IDs
+- Target information
+- Timestamps
+
+To capture test output to a file, use the `init_test_logging_with_file` function:
+
+```rust
+use intellirouter::test_utils::init_test_logging_with_file;
+
+#[test]
+fn my_test() {
+    init_test_logging_with_file("my_test").unwrap();
+    // Test implementation...
+}
+```
+
+This will create a log file in the `logs/` directory with the name `my_test.log`.

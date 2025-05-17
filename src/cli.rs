@@ -22,6 +22,8 @@ pub enum Role {
     RagManager,
     /// Persona Layer role - Manages system prompts and personas
     PersonaLayer,
+    /// Audit Controller role - Orchestrates testing and validation
+    Audit,
     /// All roles combined
     All,
 }

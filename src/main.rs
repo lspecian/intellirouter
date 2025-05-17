@@ -7,6 +7,7 @@ use intellirouter::cli::{parse_args, Commands, Role};
 use intellirouter::config::TelemetryConfig;
 use intellirouter::modules::telemetry;
 use std::process;
+use std::sync::Arc;
 use tracing::Level as LogLevel;
 
 fn main() {
@@ -117,6 +118,11 @@ fn main() {
                             process::exit(1);
                         }
 
+                        println!("Health check endpoints available at:");
+                        println!("  - /health");
+                        println!("  - /readiness");
+                        println!("  - /diagnostics");
+
                         // Keep the server running until Ctrl+C
                         tokio::signal::ctrl_c().await.unwrap();
                         println!("Shutting down...");
@@ -124,19 +130,160 @@ fn main() {
                 }
                 Role::ChainEngine => {
                     println!("Starting in Chain Engine role");
-                    // TODO: Initialize Chain Engine components
+                    
+                    // Create a tokio runtime for async operations
+                    let runtime = tokio::runtime::Runtime::new().unwrap();
+                    
+                    // Start the Chain Engine server
+                    runtime.block_on(async {
+                        // Initialize Chain Engine components
+                        let chain_engine_core = Arc::new(intellirouter::modules::chain_engine::core::ChainEngineCore::new());
+                        
+                        // Create health check manager
+                        let redis_url = config.memory.redis_url.clone();
+                        let router_endpoint = std::env::var("INTELLIROUTER__IPC__ROUTER_ENDPOINT")
+                            .ok();
+                        
+                        let health_manager = intellirouter::modules::health::chain_engine::create_chain_engine_health_manager(
+                            chain_engine_core,
+                            redis_url,
+                            router_endpoint,
+                        );
+                        
+                        // Create router with health check endpoints
+                        let app = health_manager.create_router();
+                        
+                        // Get socket address
+                        let addr = config.server.socket_addr();
+                        println!("Chain Engine listening on {}", addr);
+                        
+                        // Create TCP listener
+                        let listener = tokio::net::TcpListener::bind(&addr)
+                            .await
+                            .expect("Failed to bind to address");
+                        
+                        println!("Health check endpoints available at:");
+                        println!("  - /health");
+                        println!("  - /readiness");
+                        println!("  - /diagnostics");
+                        
+                        // Start server
+                        axum::serve(listener, app)
+                            .await
+                            .expect("Server error");
+                    });
                 }
                 Role::RagManager => {
                     println!("Starting in RAG Manager role");
-                    // TODO: Initialize RAG Manager components
+                    
+                    // Create a tokio runtime for async operations
+                    let runtime = tokio::runtime::Runtime::new().unwrap();
+                    
+                    // Start the RAG Manager server
+                    runtime.block_on(async {
+                        // Initialize RAG Manager components
+                        let rag_manager = Arc::new(intellirouter::modules::rag_manager::manager::RagManager::new());
+                        
+                        // Create health check manager
+                        let redis_url = config.memory.redis_url.clone();
+                        let router_endpoint = std::env::var("INTELLIROUTER__IPC__ROUTER_ENDPOINT")
+                            .ok();
+                        let vector_db_url = std::env::var("INTELLIROUTER__RAG__VECTOR_DB_URL")
+                            .ok();
+                        
+                        let health_manager = intellirouter::modules::health::rag_manager::create_rag_manager_health_manager(
+                            rag_manager,
+                            redis_url,
+                            router_endpoint,
+                            vector_db_url,
+                        );
+                        
+                        // Create router with health check endpoints
+                        let app = health_manager.create_router();
+                        
+                        // Get socket address
+                        let addr = config.server.socket_addr();
+                        println!("RAG Manager listening on {}", addr);
+                        
+                        // Create TCP listener
+                        let listener = tokio::net::TcpListener::bind(&addr)
+                            .await
+                            .expect("Failed to bind to address");
+                        
+                        println!("Health check endpoints available at:");
+                        println!("  - /health");
+                        println!("  - /readiness");
+                        println!("  - /diagnostics");
+                        
+                        // Start server
+                        axum::serve(listener, app)
+                            .await
+                            .expect("Server error");
+                    });
                 }
                 Role::PersonaLayer => {
                     println!("Starting in Persona Layer role");
-                    // TODO: Initialize Persona Layer components
+                    
+                    // Create a tokio runtime for async operations
+                    let runtime = tokio::runtime::Runtime::new().unwrap();
+                    
+                    // Start the Persona Layer server
+                    runtime.block_on(async {
+                        // Initialize Persona Layer components
+                        let persona_manager = Arc::new(intellirouter::modules::persona_layer::manager::PersonaManager::new());
+                        
+                        // Create health check manager
+                        let redis_url = config.memory.redis_url.clone();
+                        let router_endpoint = std::env::var("INTELLIROUTER__IPC__ROUTER_ENDPOINT")
+                            .ok();
+                        
+                        let health_manager = intellirouter::modules::health::persona_layer::create_persona_layer_health_manager(
+                            persona_manager,
+                            redis_url,
+                            router_endpoint,
+                        );
+                        
+                        // Create router with health check endpoints
+                        let app = health_manager.create_router();
+                        
+                        // Get socket address
+                        let addr = config.server.socket_addr();
+                        println!("Persona Layer listening on {}", addr);
+                        
+                        // Create TCP listener
+                        let listener = tokio::net::TcpListener::bind(&addr)
+                            .await
+                            .expect("Failed to bind to address");
+                        
+                        println!("Health check endpoints available at:");
+                        println!("  - /health");
+                        println!("  - /readiness");
+                        println!("  - /diagnostics");
+                        
+                        // Start server
+                        axum::serve(listener, app)
+                            .await
+                            .expect("Server error");
+                    });
+                }
+                Role::Audit => {
+                    println!("Starting in Audit Controller role");
+                    
+                    // Create a tokio runtime for async operations
+                    let runtime = tokio::runtime::Runtime::new().unwrap();
+                    
+                    // Run the audit CLI
+                    runtime.block_on(async {
+                        if let Err(e) = intellirouter::modules::audit::cli::run_audit_cli().await {
+                            eprintln!("Audit failed: {}", e);
+                            process::exit(1);
+                        }
+                    });
                 }
                 Role::All => {
                     println!("Starting with all components enabled");
-                    // TODO: Initialize all components
+                    println!("Health check endpoints will be available for each service on their respective ports");
+                    // TODO: Initialize all components with health checks
                 }
             }
 

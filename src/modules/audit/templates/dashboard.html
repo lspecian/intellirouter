@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliRouter Audit Dashboard</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">IntelliRouter Audit</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/topology">Topology</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/services">Services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/tests">Tests</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/metrics">Metrics</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/errors">Errors</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/history">History</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Audit Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row" id="summary-stats">
+                            <div class="col-md-4 col-lg-2">
+                                <div class="card mb-3">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Status</h5>
+                                        <div id="status-indicator" class="status-indicator">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-2">
+                                <div class="card mb-3">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Services</h5>
+                                        <div id="services-count" class="stat-value">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-2">
+                                <div class="card mb-3">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Tests</h5>
+                                        <div id="tests-count" class="stat-value">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-2">
+                                <div class="card mb-3">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Comm Tests</h5>
+                                        <div id="comm-tests-count" class="stat-value">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-2">
+                                <div class="card mb-3">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Metrics</h5>
+                                        <div id="metrics-count" class="stat-value">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-lg-2">
+                                <div class="card mb-3">
+                                    <div class="card-body text-center">
+                                        <h5 class="card-title">Errors</h5>
+                                        <div id="errors-count" class="stat-value">
+                                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">System Topology</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="topology-preview" class="topology-preview">
+                            <div class="text-center py-5">
+                                <span class="spinner-border" role="status"></span>
+                                <p class="mt-2">Loading topology...</p>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/topology" class="btn btn-primary">View Full Topology</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Service Status</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="services-preview">
+                            <div class="text-center py-5">
+                                <span class="spinner-border" role="status"></span>
+                                <p class="mt-2">Loading services...</p>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/services" class="btn btn-primary">View All Services</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Test Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="tests-preview">
+                            <div class="text-center py-5">
+                                <span class="spinner-border" role="status"></span>
+                                <p class="mt-2">Loading test results...</p>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/tests" class="btn btn-primary">View All Tests</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Error Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="errors-preview">
+                            <div class="text-center py-5">
+                                <span class="spinner-border" role="status"></span>
+                                <p class="mt-2">Loading errors...</p>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <a href="/errors" class="btn btn-primary">View All Errors</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4 mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Export Report</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="export-format">Format</label>
+                                    <select id="export-format" class="form-control">
+                                        <option value="json">JSON</option>
+                                        <option value="markdown">Markdown</option>
+                                        <option value="html">HTML</option>
+                                        <option value="pdf">PDF</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="export-filename">Filename</label>
+                                    <input type="text" id="export-filename" class="form-control"
+                                        value="intellirouter_audit_report">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button id="export-button" class="btn btn-success">Export Report</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/jquery-3.6.0.min.js"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/d3.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+
+</html>

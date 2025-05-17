@@ -43,10 +43,13 @@ spec:
               value: {{ $.Values.config.environment }}
             - name: INTELLIROUTER__TELEMETRY__LOG_LEVEL
               value: {{ $.Values.config.logLevel }}
-            - name: INTELLIROUTER__SERVER__HOST
-              value: "0.0.0.0"
-            - name: INTELLIROUTER__SERVER__PORT
-              value: "8080"
+            - name: INTELLIROUTER__IPC__SECURITY__ENABLED
+              value: {{ $.Values.config.ipcSecurityEnabled | quote }}
+            - name: INTELLIROUTER__IPC__SECURITY__TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "intellirouter.fullname" $ }}-secret
+                  key: ipc-token
             {{- range $key, $value := .config }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -63,34 +66,65 @@ spec:
                   key: redis-password
             {{- end }}
           ports:
-            - name: http
-              containerPort: 8080
-              protocol: TCP
+            {{- range .ports }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ .protocol }}
+            {{- end }}
+          {{- if .livenessProbe }}
           livenessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            {{- toYaml .livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .readinessProbe }}
           readinessProbe:
-            httpGet:
-              path: /health
-              port: http
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 3
+            {{- toYaml .readinessProbe | nindent 12 }}
+          {{- end }}
           resources:
+            {{- if .resources }}
+            {{- toYaml .resources | nindent 12 }}
+            {{- else }}
             {{- toYaml $.Values.resources | nindent 12 }}
+            {{- end }}
           volumeMounts:
             - name: config
               mountPath: /app/config
+            {{- if .volumeMounts }}
+            {{- toYaml .volumeMounts | nindent 12 }}
+            {{- end }}
       volumes:
         - name: config
           configMap:
             name: {{ include "intellirouter.fullname" $ }}-config
+        {{- if and (eq .name "router") $.Values.persistence.logs.enabled }}
+        - name: logs
+          persistentVolumeClaim:
+            claimName: {{ include "intellirouter.fullname" $ }}-logs-{{ .name }}
+        {{- end }}
+        {{- if and (eq .name "orchestrator") $.Values.persistence.logs.enabled }}
+        - name: logs
+          persistentVolumeClaim:
+            claimName: {{ include "intellirouter.fullname" $ }}-logs-{{ .name }}
+        {{- end }}
+        {{- if and (eq .name "rag-injector") $.Values.persistence.logs.enabled }}
+        - name: logs
+          persistentVolumeClaim:
+            claimName: {{ include "intellirouter.fullname" $ }}-logs-{{ .name }}
+        {{- end }}
+        {{- if and (eq .name "rag-injector") $.Values.persistence.documents.enabled }}
+        - name: documents
+          persistentVolumeClaim:
+            claimName: {{ include "intellirouter.fullname" $ }}-documents
+        {{- end }}
+        {{- if and (eq .name "summarizer") $.Values.persistence.logs.enabled }}
+        - name: logs
+          persistentVolumeClaim:
+            claimName: {{ include "intellirouter.fullname" $ }}-logs-{{ .name }}
+        {{- end }}
+        {{- if and (eq .name "summarizer") $.Values.persistence.personas.enabled }}
+        - name: personas
+          persistentVolumeClaim:
+            claimName: {{ include "intellirouter.fullname" $ }}-personas
+        {{- end }}
       {{- with $.Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

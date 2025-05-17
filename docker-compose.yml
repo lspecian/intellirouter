@@ -1,31 +1,160 @@
 version: '3.8'
 
+# IntelliRouter Production Deployment Configuration
+# This file defines all system roles and dependencies for a production deployment
+
 services:
-  intellirouter:
+  # Router Service - Routes requests to appropriate LLM backends
+  router:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
     environment:
-      - INTELLIROUTER_ENVIRONMENT=development
+      - INTELLIROUTER_ENVIRONMENT=production
       - INTELLIROUTER__SERVER__HOST=0.0.0.0
       - INTELLIROUTER__SERVER__PORT=8080
-      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=debug
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=info
       - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
       - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
-      # Add your API keys here or use .env file
-      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=${INTELLIROUTER_IPC_TOKEN:-default_token_please_change}
+      # API Keys (uncomment and set as needed)
       # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      # - XAI_API_KEY=${XAI_API_KEY}
+      # - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
     volumes:
       - ./config:/app/config
+      - ./logs/router:/app/logs
     depends_on:
       - redis
     networks:
       - intellirouter-network
-    command: [ "run", "--role", "all" ]
+    command: [ "run", "--role", "Router" ]
     restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
+  # Orchestrator Service - Manages the execution of chains and workflows
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=production
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=info
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=${INTELLIROUTER_IPC_TOKEN:-default_token_please_change}
+      # Service discovery
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+    volumes:
+      - ./config:/app/config
+      - ./logs/orchestrator:/app/logs
+    depends_on:
+      - redis
+      - router
+    networks:
+      - intellirouter-network
+    command: [ "run", "--role", "ChainEngine" ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # RAG Injector Service - Manages retrieval-augmented generation
+  rag-injector:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=production
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=info
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=${INTELLIROUTER_IPC_TOKEN:-default_token_please_change}
+      - INTELLIROUTER__RAG__ENABLED=true
+      - INTELLIROUTER__RAG__VECTOR_DB_URL=http://chromadb:8000
+      # Service discovery
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+    volumes:
+      - ./config:/app/config
+      - ./logs/rag-injector:/app/logs
+      - ./data/documents:/app/data/documents
+    depends_on:
+      - redis
+      - router
+      - chromadb
+    networks:
+      - intellirouter-network
+    command: [ "run", "--role", "RagManager" ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Summarizer Service - Manages system prompts and personas
+  summarizer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8080"
+    environment:
+      - INTELLIROUTER_ENVIRONMENT=production
+      - INTELLIROUTER__SERVER__HOST=0.0.0.0
+      - INTELLIROUTER__SERVER__PORT=8080
+      - INTELLIROUTER__TELEMETRY__LOG_LEVEL=info
+      - INTELLIROUTER__MEMORY__BACKEND_TYPE=redis
+      - INTELLIROUTER__MEMORY__REDIS_URL=redis://redis:6379
+      - INTELLIROUTER__IPC__SECURITY__ENABLED=true
+      - INTELLIROUTER__IPC__SECURITY__TOKEN=${INTELLIROUTER_IPC_TOKEN:-default_token_please_change}
+      - INTELLIROUTER__PERSONA_LAYER__ENABLED=true
+      # Service discovery
+      - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
+    volumes:
+      - ./config:/app/config
+      - ./logs/summarizer:/app/logs
+      - ./data/personas:/app/data/personas
+    depends_on:
+      - redis
+      - router
+    networks:
+      - intellirouter-network
+    command: [ "run", "--role", "PersonaLayer" ]
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Redis - Used for memory storage and inter-service communication
   redis:
     image: redis:7-alpine
     ports:
@@ -36,6 +165,55 @@ services:
       - intellirouter-network
     restart: unless-stopped
     command: [ "redis-server", "--appendonly", "yes" ]
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ChromaDB - Vector database for RAG functionality
+  chromadb:
+    image: ghcr.io/chroma-core/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    networks:
+      - intellirouter-network
+    restart: unless-stopped
+    environment:
+      - ALLOW_RESET=false
+      - ANONYMIZED_TELEMETRY=false
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+  # Optional: Ollama for local model hosting
+  # Uncomment this section to enable Ollama
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama-data:/root/.ollama
+  #   networks:
+  #     - intellirouter-network
+  #   restart: unless-stopped
+  #   deploy:
+  #     resources:
+  #       reservations:
+  #         devices:
+  #           - driver: nvidia
+  #             count: 1
+  #             capabilities: [gpu]
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:11434/api/health"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 40s
 
 networks:
   intellirouter-network:
@@ -43,3 +221,4 @@ networks:
 
 volumes:
   redis-data:
+  chroma-data: # ollama-data:  # Uncomment if using Ollama

@@ -1,0 +1,30 @@
+[Unit]
+Description=IntelliRouter Orchestrator Service (Chain Engine)
+After=network.target intellirouter-router.service
+Wants=redis-server.service
+
+[Service]
+Type=simple
+User=intellirouter
+Group=intellirouter
+WorkingDirectory=/opt/intellirouter
+EnvironmentFile=/opt/intellirouter/env/orchestrator.env
+ExecStart=/opt/intellirouter/bin/intellirouter run --role ChainEngine --config /opt/intellirouter/config/orchestrator.toml
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+StandardOutput=append:/opt/intellirouter/logs/orchestrator/stdout.log
+StandardError=append:/opt/intellirouter/logs/orchestrator/stderr.log
+
+# Security settings
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

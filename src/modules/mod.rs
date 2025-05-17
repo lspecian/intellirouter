@@ -1,37 +1,17 @@
-// Core modules for IntelliRouter
-//
-// This file exports the core modules of the IntelliRouter project,
-// each handling a specific aspect of the system's functionality.
+//! IntelliRouter Modules
+//!
+//! This file exports all the modules that make up the IntelliRouter system.
 
-// LLM Proxy - OpenAI-compatible API
-pub mod llm_proxy;
-
-// Model Registry - Model tracking and metadata
-pub mod model_registry;
-
-// Router Core - Routing logic
-pub mod router_core;
-
-// Persona Layer - System prompt injection
-pub mod persona_layer;
-
-// Chain Engine - Multi-step orchestration
-pub mod chain_engine;
-
-// RAG Manager - RAG integration
-pub mod rag_manager;
-
-// Memory - Conversation history
-pub mod memory;
-
-// AuthZ - Authentication and authorization
+pub mod audit;
 pub mod authz;
-
-// Telemetry - Logging and metrics
-pub mod telemetry;
-
-// Plugin SDK - Plugin interfaces
-pub mod plugin_sdk;
-
-// IPC - Inter-process communication infrastructure
+pub mod chain_engine;
+pub mod health;
 pub mod ipc;
+pub mod llm_proxy;
+pub mod memory;
+pub mod model_registry;
+pub mod persona_layer;
+pub mod plugin_sdk;
+pub mod rag_manager;
+pub mod router_core;
+pub mod telemetry;

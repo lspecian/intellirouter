@@ -1,0 +1,61 @@
+{{- if .Values.persistence.logs.enabled }}
+{{- range .Values.roles }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "intellirouter.fullname" $ }}-logs-{{ .name }}
+  labels:
+    {{- include "intellirouter.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ .name }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if $.Values.persistence.logs.storageClass }}
+  storageClassName: {{ $.Values.persistence.logs.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $.Values.persistence.logs.size }}
+{{- end }}
+{{- end }}
+
+{{- if .Values.persistence.documents.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "intellirouter.fullname" . }}-documents
+  labels:
+    {{- include "intellirouter.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rag-injector
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.persistence.documents.storageClass }}
+  storageClassName: {{ .Values.persistence.documents.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.documents.size }}
+{{- end }}
+
+{{- if .Values.persistence.personas.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "intellirouter.fullname" . }}-personas
+  labels:
+    {{- include "intellirouter.labels" . | nindent 4 }}
+    app.kubernetes.io/component: summarizer
+spec:
+  accessModes:
+    - ReadWriteOnce
+  {{- if .Values.persistence.personas.storageClass }}
+  storageClassName: {{ .Values.persistence.personas.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.personas.size }}
+{{- end }}

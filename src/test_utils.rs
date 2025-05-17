@@ -9,11 +9,50 @@ use std::sync::Once;
 static INIT: Once = Once::new();
 pub fn init_test_logging() {
     INIT.call_once(|| {
-        tracing_subscriber::fmt()
-            .with_env_filter("intellirouter=debug,test=debug")
+        let env_filter = std::env::var("RUST_LOG")
+            .unwrap_or_else(|_| "intellirouter=debug,test=debug".to_string());
+
+        let subscriber = tracing_subscriber::fmt()
+            .with_env_filter(env_filter)
+            .with_file(true)
+            .with_line_number(true)
+            .with_thread_ids(true)
+            .with_target(true)
             .with_test_writer()
-            .init();
+            .finish();
+
+        tracing::subscriber::set_global_default(subscriber)
+            .expect("Failed to set global default subscriber");
     });
+}
+
+/// Initialize logging for tests with output to a file
+pub fn init_test_logging_with_file(test_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+    use std::fs::File;
+    use tracing_subscriber::fmt::writer::MakeWriterExt;
+
+    let log_dir = std::path::Path::new("logs");
+    std::fs::create_dir_all(log_dir)?;
+
+    let log_file = File::create(log_dir.join(format!("{}.log", test_name)))?;
+    let writer = std::io::stdout.and(log_file);
+
+    let env_filter =
+        std::env::var("RUST_LOG").unwrap_or_else(|_| "intellirouter=debug,test=debug".to_string());
+
+    let subscriber = tracing_subscriber::fmt()
+        .with_env_filter(env_filter)
+        .with_file(true)
+        .with_line_number(true)
+        .with_thread_ids(true)
+        .with_target(true)
+        .with_writer(writer)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("Failed to set global default subscriber");
+
+    Ok(())
 }
 
 /// A test fixture for configuration

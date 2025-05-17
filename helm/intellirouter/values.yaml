@@ -24,16 +24,16 @@ serviceAccount:
 
 podAnnotations: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+podSecurityContext:
+  fsGroup: 1000
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+securityContext:
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1000
 
 service:
   type: ClusterIP
@@ -55,20 +55,20 @@ ingress:
   #    hosts:
   #      - intellirouter.local
 
-resources: {}
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
 
 autoscaling:
   enabled: false
   minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 
@@ -80,17 +80,207 @@ affinity: {}
 config:
   environment: production
   logLevel: info
+  ipcSecurityEnabled: true
+  ipcSecurityToken: "default_token_please_change"
 
 # Role-specific configuration
 roles:
+  # Router Service - Routes requests to appropriate LLM backends
   - name: router
     replicas: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
     config:
-      INTELLIROUTER_ROLE: router
+      INTELLIROUTER_ROLE: Router
+      INTELLIROUTER__SERVER__HOST: "0.0.0.0"
+      INTELLIROUTER__SERVER__PORT: "8080"
+      INTELLIROUTER__TELEMETRY__LOG_LEVEL: "info"
+      INTELLIROUTER__MEMORY__BACKEND_TYPE: "redis"
+      INTELLIROUTER__IPC__SECURITY__ENABLED: "true"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    volumeMounts:
+      - name: config
+        mountPath: /app/config
+      - name: logs
+        mountPath: /app/logs
+    
+  # Orchestrator Service - Manages the execution of chains and workflows
   - name: orchestrator
     replicas: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
     config:
-      INTELLIROUTER_ROLE: orchestrator
+      INTELLIROUTER_ROLE: ChainEngine
+      INTELLIROUTER__SERVER__HOST: "0.0.0.0"
+      INTELLIROUTER__SERVER__PORT: "8080"
+      INTELLIROUTER__TELEMETRY__LOG_LEVEL: "info"
+      INTELLIROUTER__MEMORY__BACKEND_TYPE: "redis"
+      INTELLIROUTER__IPC__SECURITY__ENABLED: "true"
+      INTELLIROUTER__IPC__ROUTER_ENDPOINT: "http://intellirouter-router:8080"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    volumeMounts:
+      - name: config
+        mountPath: /app/config
+      - name: logs
+        mountPath: /app/logs
+
+  # RAG Injector Service - Manages retrieval-augmented generation
+  - name: rag-injector
+    replicas: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    config:
+      INTELLIROUTER_ROLE: RagManager
+      INTELLIROUTER__SERVER__HOST: "0.0.0.0"
+      INTELLIROUTER__SERVER__PORT: "8080"
+      INTELLIROUTER__TELEMETRY__LOG_LEVEL: "info"
+      INTELLIROUTER__MEMORY__BACKEND_TYPE: "redis"
+      INTELLIROUTER__IPC__SECURITY__ENABLED: "true"
+      INTELLIROUTER__RAG__ENABLED: "true"
+      INTELLIROUTER__RAG__VECTOR_DB_URL: "http://intellirouter-chromadb:8000"
+      INTELLIROUTER__IPC__ROUTER_ENDPOINT: "http://intellirouter-router:8080"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    volumeMounts:
+      - name: config
+        mountPath: /app/config
+      - name: logs
+        mountPath: /app/logs
+      - name: documents
+        mountPath: /app/data/documents
+
+  # Summarizer Service - Manages system prompts and personas
+  - name: summarizer
+    replicas: 1
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    config:
+      INTELLIROUTER_ROLE: PersonaLayer
+      INTELLIROUTER__SERVER__HOST: "0.0.0.0"
+      INTELLIROUTER__SERVER__PORT: "8080"
+      INTELLIROUTER__TELEMETRY__LOG_LEVEL: "info"
+      INTELLIROUTER__MEMORY__BACKEND_TYPE: "redis"
+      INTELLIROUTER__IPC__SECURITY__ENABLED: "true"
+      INTELLIROUTER__PERSONA_LAYER__ENABLED: "true"
+      INTELLIROUTER__IPC__ROUTER_ENDPOINT: "http://intellirouter-router:8080"
+    ports:
+      - name: http
+        containerPort: 8080
+        protocol: TCP
+    livenessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readinessProbe:
+      httpGet:
+        path: /health
+        port: http
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    volumeMounts:
+      - name: config
+        mountPath: /app/config
+      - name: logs
+        mountPath: /app/logs
+      - name: personas
+        mountPath: /app/data/personas
+
+# Persistent volume claims
+persistence:
+  logs:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+  documents:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
+  personas:
+    enabled: true
+    size: 1Gi
+    storageClass: ""
 
 # Redis configuration
 redis:
@@ -99,6 +289,17 @@ redis:
   auth:
     enabled: true
     password: "intellirouter-redis-password"
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 512Mi
+      cpu: 250m
 
 # ChromaDB configuration
 chromadb:
@@ -113,3 +314,63 @@ chromadb:
   persistence:
     enabled: true
     size: 1Gi
+    storageClass: ""
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+# Network policies
+networkPolicy:
+  enabled: false
+  ingressRules:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: intellirouter
+      ports:
+        - protocol: TCP
+          port: 8080
+
+# RBAC configuration
+rbac:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["pods", "services"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["apps"]
+      resources: ["deployments"]
+      verbs: ["get", "list", "watch"]
+
+# Ollama configuration (optional)
+ollama:
+  enabled: false
+  image:
+    repository: ollama/ollama
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 11434
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClass: ""
+  resources:
+    requests:
+      memory: 2Gi
+      cpu: 1000m
+    limits:
+      memory: 4Gi
+      cpu: 2000m
+  gpu:
+    enabled: false
+    count: 1

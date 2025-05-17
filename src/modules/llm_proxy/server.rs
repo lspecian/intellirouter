@@ -37,6 +37,8 @@ pub struct ServerConfig {
     pub cors_enabled: bool,
     /// CORS allowed origins
     pub cors_allowed_origins: Vec<String>,
+    /// Redis URL for health checks
+    pub redis_url: Option<String>,
 }
 
 impl ServerConfig {
@@ -49,6 +51,7 @@ impl ServerConfig {
             request_timeout_secs: config.server.request_timeout_secs,
             cors_enabled: config.server.cors_enabled,
             cors_allowed_origins: config.server.cors_allowed_origins.clone(),
+            redis_url: config.memory.redis_url.clone(),
         }
     }
 
@@ -122,6 +125,20 @@ pub async fn start_server(config: ServerConfig, provider: Provider) -> Result<()
         cost_calculator,
     };
 
+    // Create health check manager
+    let health_manager = crate::modules::health::router::create_router_health_manager(
+        Arc::new(crate::modules::model_registry::api::ModelRegistryApi::new()),
+        crate::modules::router_core::RouterConfig::default(),
+        Some(
+            config
+                .redis_url
+                .clone()
+                .unwrap_or_else(|| "redis://localhost:6379".to_string()),
+        ),
+    );
+
+    let health_router = health_manager.create_router();
+
     // Create router
     let app = if let (Some(telemetry), Some(cost_calculator)) = (
         app_state.telemetry.clone(),
@@ -129,9 +146,10 @@ pub async fn start_server(config: ServerConfig, provider: Provider) -> Result<()
     ) {
         // Create router with telemetry middleware
         telemetry_integration::create_router_with_telemetry(telemetry, cost_calculator)
+            .merge(health_router)
     } else {
         // Create router without telemetry
-        create_router(app_state.clone())
+        create_router(app_state.clone()).merge(health_router)
     };
 
     // Get socket address
@@ -174,8 +192,8 @@ async fn init_telemetry_components(
 pub fn create_router(state: AppState) -> Router {
     // Create a basic router without state first
     let router = Router::new()
-        // Health check endpoint
-        .route("/health", get(health_check));
+        // Legacy health check endpoint (simple version)
+        .route("/health/simple", get(health_check));
 
     // If telemetry is available, create a router with telemetry state
     if let (Some(telemetry), Some(cost_calculator)) = (state.telemetry, state.cost_calculator) {
@@ -196,9 +214,17 @@ pub fn create_router(state: AppState) -> Router {
     }
 }
 
-/// Health check endpoint
+/// Simple health check endpoint (legacy)
 async fn health_check() -> impl IntoResponse {
-    (StatusCode::OK, Json(serde_json::json!({ "status": "ok" })))
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "ok",
+            "service": "LLM Proxy",
+            "version": env!("CARGO_PKG_VERSION"),
+            "timestamp": chrono::Utc::now().to_rfc3339()
+        })),
+    )
 }
 
 #[cfg(test)]
@@ -234,6 +260,7 @@ mod tests {
             request_timeout_secs: 30,
             cors_enabled: false,
             cors_allowed_origins: vec!["*".to_string()],
+            redis_url: None,
         };
 
         let addr = config.socket_addr().unwrap();
@@ -261,6 +288,7 @@ mod tests {
             request_timeout_secs: 30,
             cors_enabled: false,
             cors_allowed_origins: vec!["*".to_string()],
+            redis_url: None,
         };
 
         let app_state = AppState {

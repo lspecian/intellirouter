@@ -1,0 +1,30 @@
+[Unit]
+Description=IntelliRouter Persona Layer Service (Summarizer)
+After=network.target intellirouter-router.service
+Wants=redis-server.service
+
+[Service]
+Type=simple
+User=intellirouter
+Group=intellirouter
+WorkingDirectory=/opt/intellirouter
+EnvironmentFile=/opt/intellirouter/env/persona-layer.env
+ExecStart=/opt/intellirouter/bin/intellirouter run --role PersonaLayer --config /opt/intellirouter/config/persona-layer.toml
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+StandardOutput=append:/opt/intellirouter/logs/persona-layer/stdout.log
+StandardError=append:/opt/intellirouter/logs/persona-layer/stderr.log
+
+# Security settings
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,139 @@
+IntelliRouter Physical Deployment - Network Topology
+=================================================
+
+                                                 ┌───────────────────┐
+                                                 │                   │
+                                                 │  External Clients │
+                                                 │                   │
+                                                 └─────────┬─────────┘
+                                                           │
+                                                           │ HTTPS (443)
+                                                           ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│                                  DMZ / Public Network                           │
+│                                                                                 │
+└───────────────────────────────────┬─────────────────────────────────────────────┘
+                                    │
+                                    │ HTTP/HTTPS (8080/443)
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│                                 Load Balancer Tier                              │
+│                                                                                 │
+│                              ┌─────────────────────┐                            │
+│                              │                     │                            │
+│                              │    Load Balancer    │                            │
+│                              │    (HAProxy/NGINX)  │                            │
+│                              │                     │                            │
+│                              └──────────┬──────────┘                            │
+│                                         │                                       │
+└─────────────────────────────────────────┼───────────────────────────────────────┘
+                                          │
+                                          │ HTTP (8080)
+                                          ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│                                Application Tier                                 │
+│                                                                                 │
+│  ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐         │
+│  │                 │      │                 │      │                 │         │
+│  │  Router Node 1  │      │  Router Node 2  │      │  Router Node 3  │         │
+│  │                 │      │                 │      │                 │         │
+│  └────────┬────────┘      └────────┬────────┘      └────────┬────────┘         │
+│           │                        │                        │                   │
+└───────────┼────────────────────────┼────────────────────────┼───────────────────┘
+            │                        │                        │
+            │ HTTP/gRPC              │ HTTP/gRPC              │ HTTP/gRPC
+            │ (8081/8082/8083)       │ (8081/8082/8083)       │ (8081/8082/8083)
+            ▼                        ▼                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│                                 Service Tier                                    │
+│                                                                                 │
+│  ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐         │
+│  │                 │      │                 │      │                 │         │
+│  │  Orchestrator   │      │   RAG Manager   │      │  Persona Layer  │         │
+│  │  (Chain Engine) │      │                 │      │                 │         │
+│  │                 │      │                 │      │                 │         │
+│  └────────┬────────┘      └────────┬────────┘      └────────┬────────┘         │
+│           │                        │                        │                   │
+└───────────┼────────────────────────┼────────────────────────┼───────────────────┘
+            │                        │                        │
+            │ TCP (6379)             │ HTTP (8000)            │ TCP (6379)
+            ▼                        ▼                        ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│                                  Data Tier                                      │
+│                                                                                 │
+│  ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐         │
+│  │                 │      │                 │      │                 │         │
+│  │  Redis Server   │      │    ChromaDB     │      │  Redis Replica  │         │
+│  │   (Primary)     │      │                 │      │  (Optional)     │         │
+│  │                 │      │                 │      │                 │         │
+│  └─────────────────┘      └─────────────────┘      └─────────────────┘         │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                          │
+                                          │ HTTP (11434)
+                                          ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                 │
+│                                Inference Tier                                   │
+│                                 (Optional)                                      │
+│                                                                                 │
+│  ┌─────────────────┐      ┌─────────────────┐      ┌─────────────────┐         │
+│  │                 │      │                 │      │                 │         │
+│  │  Ollama Node 1  │      │  Ollama Node 2  │      │  Ollama Node 3  │         │
+│  │  (GPU-enabled)  │      │  (GPU-enabled)  │      │  (GPU-enabled)  │         │
+│  │                 │      │                 │      │                 │         │
+│  └─────────────────┘      └─────────────────┘      └─────────────────┘         │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+
+Network Flow:
+------------
+
+1. External clients connect to the load balancer via HTTPS (port 443)
+2. Load balancer distributes requests to Router nodes via HTTP (port 8080)
+3. Router nodes communicate with service tier components:
+   - Orchestrator (Chain Engine) via HTTP/gRPC (port 8081)
+   - RAG Manager via HTTP/gRPC (port 8082)
+   - Persona Layer via HTTP/gRPC (port 8083)
+4. Service tier components communicate with data tier:
+   - All services connect to Redis for state management (port 6379)
+   - RAG Manager connects to ChromaDB for vector storage (port 8000)
+5. All services can optionally connect to Ollama nodes for local inference (port 11434)
+
+Firewall Configuration:
+---------------------
+
+DMZ/Public Network:
+- Allow inbound: TCP 443 (HTTPS) from external clients
+- Allow outbound: None
+
+Load Balancer Tier:
+- Allow inbound: TCP 443 (HTTPS) from DMZ
+- Allow outbound: TCP 8080 (HTTP) to Application Tier
+
+Application Tier (Router Nodes):
+- Allow inbound: TCP 8080 (HTTP) from Load Balancer Tier
+- Allow outbound: TCP 8081/8082/8083 (HTTP/gRPC) to Service Tier
+- Allow outbound: TCP 6379 (Redis) to Data Tier
+- Allow outbound: TCP 11434 (Ollama) to Inference Tier
+
+Service Tier:
+- Allow inbound: TCP 8081/8082/8083 (HTTP/gRPC) from Application Tier
+- Allow outbound: TCP 6379 (Redis) to Data Tier
+- Allow outbound: TCP 8000 (ChromaDB) to Data Tier
+- Allow outbound: TCP 11434 (Ollama) to Inference Tier
+
+Data Tier:
+- Allow inbound: TCP 6379 (Redis) from Application and Service Tiers
+- Allow inbound: TCP 8000 (ChromaDB) from Service Tier
+- Allow outbound: None
+
+Inference Tier:
+- Allow inbound: TCP 11434 (Ollama) from Application and Service Tiers
+- Allow outbound: None

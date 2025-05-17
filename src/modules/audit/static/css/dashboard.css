@@ -1,0 +1,142 @@
+/* Dashboard CSS */
+
+/* General styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.card {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    font-weight: bold;
+}
+
+/* Status indicators */
+.status-indicator {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Topology visualization */
+.topology-preview {
+    width: 100%;
+    height: 300px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    overflow: hidden;
+}
+
+.topology-container {
+    width: 100%;
+    height: 600px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+/* Service status colors */
+.service-running {
+    color: #28a745;
+}
+
+.service-failed {
+    color: #dc3545;
+}
+
+.service-starting {
+    color: #ffc107;
+}
+
+.service-stopped {
+    color: #6c757d;
+}
+
+/* Test result styles */
+.test-success {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.test-failure {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Metrics visualization */
+.metrics-container {
+    width: 100%;
+    height: 400px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.metric-card {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.metric-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+/* Error visualization */
+.error-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+/* History table */
+.history-table {
+    font-size: 0.9rem;
+}
+
+.history-success {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.history-failure {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Export form */
+.export-form {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stat-value {
+        font-size: 1.2rem;
+    }
+
+    .topology-preview,
+    .topology-container {
+        height: 250px;
+    }
+
+    .metrics-container {
+        height: 300px;
+    }
+}

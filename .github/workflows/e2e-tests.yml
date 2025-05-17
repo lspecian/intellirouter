@@ -1,0 +1,68 @@
+name: End-to-End Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    name: Run E2E Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Start Integration Test Environment
+        run: docker-compose -f docker-compose.integration.yml up -d
+
+      - name: Wait for Services to be Ready
+        run: |
+          echo "Waiting for services to start..."
+          sleep 30
+          docker-compose -f docker-compose.integration.yml ps
+
+      - name: Run E2E Tests
+        run: |
+          chmod +x ./scripts/run_e2e_tests.sh
+          ./scripts/run_e2e_tests.sh
+
+      - name: Run Ignored Tests
+        run: |
+          echo "Running longer tests that are marked with #[ignore]..."
+          cargo test -- --ignored
+
+      - name: Upload Test Logs
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-logs
+          path: |
+            logs/
+            target/debug/deps/*.log
+
+      - name: Cleanup
+        if: always()
+        run: docker-compose -f docker-compose.integration.yml down -v

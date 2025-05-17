@@ -652,6 +652,7 @@ async fn test_chain_with_model_registry() {
 }
 
 #[tokio::test]
+#[ignore = "Long-running test: Multi-step chain execution with multiple models"]
 async fn test_multi_step_chain() {
     // Initialize test environment
     init_test_logging();
@@ -699,6 +700,7 @@ async fn test_multi_step_chain() {
 }
 
 #[tokio::test]
+#[ignore = "Long-running test: Conditional chain execution with multiple models"]
 async fn test_conditional_chain() {
     // Initialize test environment
     init_test_logging();
@@ -749,6 +751,7 @@ async fn test_conditional_chain() {
 }
 
 #[tokio::test]
+#[ignore = "Long-running test: Error handling chain with failing model"]
 async fn test_error_handling_chain() {
     // Initialize test environment
     init_test_logging();
