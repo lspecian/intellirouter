@@ -101,6 +101,7 @@ impl AuditController {
         // Use the validation config from the AuditConfig if provided, or create a default one
         let validation_config = config
             .validation_config
+            .clone() // Clone to avoid partial move
             .unwrap_or_else(|| ValidationConfig {
                 validate_service_discovery: true,
                 validate_direct_communication: true,

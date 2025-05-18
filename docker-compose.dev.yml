@@ -22,7 +22,7 @@ services:
       - INTELLIROUTER__IPC__SECURITY__TOKEN=dev_token
       - RUST_BACKTRACE=1
       # API Keys (uncomment and set as needed)
-      # - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       # - OPENAI_API_KEY=${OPENAI_API_KEY}
       # - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       # - MISTRAL_API_KEY=${MISTRAL_API_KEY}
@@ -87,7 +87,7 @@ services:
       - INTELLIROUTER__IPC__SECURITY__ENABLED=true
       - INTELLIROUTER__IPC__SECURITY__TOKEN=dev_token
       - INTELLIROUTER__RAG__ENABLED=true
-      - INTELLIROUTER__RAG__VECTOR_DB_URL=http://chromadb:8000
+      - INTELLIROUTER__RAG__VECTOR_DB_URL=http://chromadb:8000 # Port 8000 is internal to the container network
       - RUST_BACKTRACE=1
       # Service discovery
       - INTELLIROUTER__IPC__ROUTER_ENDPOINT=http://router:8080
@@ -153,7 +153,7 @@ services:
   chromadb:
     image: ghcr.io/chroma-core/chroma:latest
     ports:
-      - "8000:8000"
+      - "8084:8000"
     volumes:
       - chroma-dev-data:/chroma/chroma
     networks:

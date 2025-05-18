@@ -2,11 +2,14 @@
 # Script to test GitHub Actions workflows locally using act
 # https://github.com/nektos/act
 
+# Define the act command
+ACT_CMD="./bin/act"
+
 # Check if act is installed
-if ! command -v act &> /dev/null; then
-    echo "Error: 'act' is not installed. Please install it first:"
-    echo "  macOS: brew install act"
-    echo "  Linux: curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash"
+if [ ! -f "$ACT_CMD" ]; then
+    echo "Error: 'act' is not found at $ACT_CMD."
+    echo "It should have been installed by:"
+    echo "  curl -s https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash"
     exit 1
 fi
 
@@ -24,7 +27,7 @@ fi
 run_workflow() {
     local workflow=$1
     echo "Running workflow: $workflow"
-    act -W .github/workflows/$workflow.yml push
+    $ACT_CMD -W .github/workflows/$workflow.yml push
 }
 
 # Function to run a specific job from a workflow
@@ -32,7 +35,7 @@ run_job() {
     local workflow=$1
     local job=$2
     echo "Running job '$job' from workflow: $workflow"
-    act -W .github/workflows/$workflow.yml -j $job
+    $ACT_CMD -W .github/workflows/$workflow.yml -j $job
 }
 
 # Display menu
@@ -51,7 +54,7 @@ read -p "Enter your choice (1-6): " choice
 case $choice in
     1)
         echo "Running all workflows..."
-        act push
+        $ACT_CMD push
         ;;
     2)
         run_workflow "test"

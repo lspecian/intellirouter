@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use axum::serve::Serve;
 use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
@@ -14,9 +15,10 @@ use axum::{
     Json, Router,
 };
 use chrono::{DateTime, Utc};
+use tower_http::services::ServeDir;
+// Removed incorrect hyper Server import - will be replaced with correct import if needed
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
-use tower_http::services::ServeDir;
 use tracing::{debug, error, info, warn};
 
 use super::exporters::ExportFormat;
@@ -115,10 +117,8 @@ impl DashboardServer {
 
         // Start server
         tokio::spawn(async move {
-            if let Err(e) = axum::Server::bind(&addr)
-                .serve(router.into_make_service())
-                .await
-            {
+            let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+            if let Err(e) = axum::serve::serve(listener, router).await {
                 error!("Dashboard server error: {}", e);
             }
         });
@@ -228,7 +228,7 @@ impl DashboardServer {
     async fn get_topology(
         State(state): State<Arc<DashboardState>>,
     ) -> Result<Json<SystemTopology>, StatusCode> {
-        let report = state.report.read().await;
+        let report = state.report.read().await.clone();
 
         let mut topology = SystemTopology::new();
 
@@ -342,7 +342,7 @@ impl DashboardServer {
     async fn get_tests(
         State(state): State<Arc<DashboardState>>,
     ) -> Result<Json<Vec<serde_json::Value>>, StatusCode> {
-        let report = state.report.read().await;
+        let report = state.report.read().await.clone();
 
         // Convert test results to JSON
         let test_results = report
@@ -367,7 +367,7 @@ impl DashboardServer {
     async fn get_metrics(
         State(state): State<Arc<DashboardState>>,
     ) -> Result<Json<Vec<serde_json::Value>>, StatusCode> {
-        let report = state.report.read().await;
+        let report = state.report.read().await.clone();
 
         // Convert metrics to JSON
         let metrics = report
@@ -390,8 +390,8 @@ impl DashboardServer {
     async fn get_errors(
         State(state): State<Arc<DashboardState>>,
     ) -> Result<Json<Vec<String>>, StatusCode> {
-        let report = state.report.read().await;
-        Ok(Json(report.errors.clone()))
+        let report = state.report.read().await.clone();
+        Ok(Json(report.errors))
     }
 
     /// Export report

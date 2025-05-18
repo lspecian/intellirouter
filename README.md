@@ -177,6 +177,43 @@ Response:
 }
 ```
 
+## Testing
+
+### Router Role Testing
+
+The router role can be tested using the provided integration tests and CLI script:
+
+#### Running Integration Tests
+
+```bash
+# Run all tests
+cargo test
+
+# Run router-specific integration tests
+cargo test --test router_integration_tests
+```
+
+#### Manual Testing with CLI Script
+
+A CLI script is provided to test the router role manually:
+
+```bash
+# Start the router in one terminal
+cargo run -- --role router
+
+# In another terminal, run the test script
+./scripts/test-router.sh
+
+# You can specify a different host, port, or model
+./scripts/test-router.sh localhost 9000 mock-llama
+```
+
+The test script will:
+1. Check if the router is running
+2. Send a test request to the `/v1/chat/completions` endpoint
+3. Validate the response structure
+4. Display the results
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.

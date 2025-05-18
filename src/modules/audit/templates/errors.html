@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Error Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        .error-summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .summary-box {
+            flex: 1;
+            margin: 0 10px;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .critical {
+            background-color: #ffe6e6;
+            border: 1px solid #cc9999;
+        }
+
+        .warning {
+            background-color: #fff9e6;
+            border: 1px solid #ccc699;
+        }
+
+        .info {
+            background-color: #e6f2ff;
+            border: 1px solid #99b3cc;
+        }
+
+        .total {
+            background-color: #f2f2f2;
+            border: 1px solid #cccccc;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f8f8;
+            font-weight: bold;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .severity-critical {
+            color: #d9534f;
+            font-weight: bold;
+        }
+
+        .severity-warning {
+            color: #f0ad4e;
+            font-weight: bold;
+        }
+
+        .severity-info {
+            color: #5bc0de;
+            font-weight: bold;
+        }
+
+        .error-details {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 3px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Error Monitoring Dashboard</h1>
+
+        <div class="error-summary">
+            <div class="summary-box critical">
+                <h3>Critical</h3>
+                <p class="count">0</p>
+            </div>
+            <div class="summary-box warning">
+                <h3>Warning</h3>
+                <p class="count">0</p>
+            </div>
+            <div class="summary-box info">
+                <h3>Info</h3>
+                <p class="count">0</p>
+            </div>
+            <div class="summary-box total">
+                <h3>Total</h3>
+                <p class="count">0</p>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Service</th>
+                    <th>Severity</th>
+                    <th>Message</th>
+                    <th>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Error data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

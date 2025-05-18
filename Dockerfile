@@ -6,7 +6,12 @@ WORKDIR /app
 
 # Install build dependencies
 RUN apt-get update && \
-    apt-get install -y pkg-config libssl-dev build-essential g++ libfontconfig1-dev && \
+    apt-get install -y pkg-config libssl-dev build-essential g++ libfontconfig1-dev \
+    wget xfonts-75dpi xfonts-base && \
+    wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb || true && \
+    apt-get -f install -y && \
+    rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -27,7 +32,12 @@ FROM debian:bookworm-slim
 
 # Install runtime dependencies
 RUN apt-get update && \
-    apt-get install -y ca-certificates libssl-dev && \
+    apt-get install -y ca-certificates libssl-dev libfontconfig1 \
+    wget xfonts-75dpi xfonts-base && \
+    wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.buster_amd64.deb && \
+    dpkg -i wkhtmltox_0.12.6-1.buster_amd64.deb || true && \
+    apt-get -f install -y && \
+    rm wkhtmltox_0.12.6-1.buster_amd64.deb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

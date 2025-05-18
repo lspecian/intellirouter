@@ -4,7 +4,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use crate::modules::chain_engine::chain_definition::{Chain, Condition, DependencyType, StepType};
+use crate::modules::chain_engine::definition::{Chain, Condition, DependencyType, StepType};
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 
 /// Validates a chain definition

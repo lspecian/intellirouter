@@ -1,43 +1,24 @@
 # Local configuration for IntelliRouter
 
-# Environment - must match the exact case of the enum variant
-environment = "Development"
-
 # Server configuration
 [server]
-host = "127.0.0.1"
-port = 9000
+host = "0.0.0.0"
+port = 8080
 
 # Model registry configuration
 [model_registry]
-default_provider = "openai"  # Using OpenAI as default since we added that API key
+default_provider = "anthropic"
 
-# Authentication configuration - using a simple test key
-[auth]
-auth_enabled = true
-auth_method = "api_key"
-api_keys = ["local-development-key"]
-
-# Memory configuration - using in-memory for simplicity
+# Memory configuration - using in-memory backend to avoid database dependencies
 [memory]
-backend_type = "memory"
+backend_type = "in_memory"
 
-# Telemetry configuration
-[telemetry]
-log_level = "debug"
-
-# RAG configuration - disabled for simplicity
+# Disable features that require external dependencies
 [rag]
 enabled = false
 
-# Chain engine configuration
-[chain_engine]
-enable_caching = true
-
-# Persona layer configuration
-[persona_layer]
-enabled = true
-
-# Plugin SDK configuration
 [plugin_sdk]
 enabled = false
+
+[auth]
+auth_enabled = false

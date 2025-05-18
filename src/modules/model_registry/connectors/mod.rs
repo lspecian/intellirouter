@@ -275,6 +275,19 @@ pub struct ConnectorConfig {
     pub additional_config: HashMap<String, String>,
 }
 
+impl Default for ConnectorConfig {
+    fn default() -> Self {
+        Self {
+            base_url: "https://api.example.com".to_string(),
+            api_key: None,
+            org_id: None,
+            timeout_secs: 30,
+            max_retries: 3,
+            additional_config: HashMap::new(),
+        }
+    }
+}
+
 /// Type alias for a streaming response
 pub type StreamingResponse =
     Pin<Box<dyn Stream<Item = Result<ChatCompletionChunk, ConnectorError>> + Send>>;

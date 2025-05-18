@@ -14,10 +14,11 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::modules::llm_proxy::{
-        routes::{ChatCompletionRequest, ChatMessage},
+        routes::ChatCompletionRequest,
         server::{create_router, AppState, ServerConfig, SharedState},
         Provider,
     };
+    use crate::modules::model_registry::connectors::ChatMessage;
     use std::sync::Arc;
     use tokio::sync::Mutex;
 
@@ -32,6 +33,7 @@ mod tests {
                 request_timeout_secs: 30,
                 cors_enabled: false,
                 cors_allowed_origins: vec![],
+                redis_url: None,
             },
             shared: Arc::new(Mutex::new(SharedState::new())),
             telemetry: None,

@@ -31,7 +31,11 @@ pub use persistence::{
 };
 pub use storage::ModelRegistry;
 pub use types::{
-    ModelCapabilities, ModelFilter, ModelMetadata, ModelStatus, ModelType, RegistryError,
+    capabilities::ModelCapabilities,
+    errors::RegistryError,
+    filters::ModelFilter,
+    model::{ModelMetadata, ModelType},
+    status::ModelStatus,
 };
 
 // Provide a global instance for convenience

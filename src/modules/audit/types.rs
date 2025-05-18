@@ -232,7 +232,7 @@ impl fmt::Display for TestFlow {
 }
 
 /// Metric type
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize, Hash)]
 pub enum MetricType {
     /// Latency metrics
     Latency,

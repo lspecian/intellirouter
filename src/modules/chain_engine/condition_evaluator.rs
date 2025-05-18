@@ -5,8 +5,8 @@
 use regex::Regex;
 use std::collections::HashMap;
 
-use crate::modules::chain_engine::chain_definition::{ComparisonOperator, Condition};
 use crate::modules::chain_engine::context::ChainContext;
+use crate::modules::chain_engine::definition::{ComparisonOperator, Condition};
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 
 /// Condition evaluator for chain execution

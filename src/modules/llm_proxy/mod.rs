@@ -4,10 +4,16 @@
 //! It handles request formatting, response parsing, and API compatibility layers.
 
 pub mod conformance_tests;
+pub mod domain;
+pub mod dto;
 pub mod formatting;
 pub mod formatting_tests;
+pub mod integration_tests;
+pub mod mock_backend;
+pub mod router_integration;
 pub mod routes;
 pub mod server;
+pub mod service;
 pub mod telemetry_integration;
 pub mod validation;
 pub mod websocket;
@@ -48,4 +54,18 @@ pub fn send_request() -> Result<String, String> {
 }
 
 // Re-export key types from the server module
+pub use mock_backend::MockModelBackend;
 pub use server::{AppState, ServerConfig, SharedState};
+
+// Re-export key types from the domain module
+pub use domain::content::{ContentPart, MessageContent};
+pub use domain::message::{Message, MessageRole};
+
+// Re-export key types from the dto module
+pub use dto::{
+    ApiError, ApiErrorDetail, ChatCompletionChoice, ChatCompletionChunk, ChatCompletionChunkChoice,
+    ChatCompletionRequest, ChatCompletionResponse, ChatMessageDelta, TokenUsage,
+};
+
+// Re-export key functions from the validation module
+pub use validation::create_validation_error;

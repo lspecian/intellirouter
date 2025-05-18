@@ -14,6 +14,15 @@ pub struct RagManager {
     sources: HashMap<String, Arc<dyn ContextSource>>,
 }
 
+impl std::fmt::Debug for RagManager {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("RagManager")
+            .field("sources_count", &self.sources.len())
+            .field("source_names", &self.sources.keys().collect::<Vec<_>>())
+            .finish()
+    }
+}
+
 impl RagManager {
     /// Create a new RAG manager
     pub fn new() -> Self {

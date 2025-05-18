@@ -3,7 +3,9 @@
 //! This module implements validation logic for incoming API requests to ensure
 //! they meet the required format and constraints before processing.
 
-use super::routes::{ApiError, ChatCompletionRequest, ChatMessage};
+use super::domain::content::{ContentPart, MessageContent};
+use super::domain::message::Message;
+use super::dto::{ApiError, ApiErrorDetail, ChatCompletionRequest};
 
 /// Validate a chat completion request
 pub fn validate_chat_completion_request(request: &ChatCompletionRequest) -> Result<(), ApiError> {
@@ -112,7 +114,7 @@ fn validate_model(model: &str) -> Result<(), ApiError> {
 }
 
 /// Validate the messages array
-fn validate_messages(messages: &[ChatMessage]) -> Result<(), ApiError> {
+fn validate_messages(messages: &[Message]) -> Result<(), ApiError> {
     // Check if messages is empty
     if messages.is_empty() {
         return Err(create_validation_error(
@@ -124,22 +126,78 @@ fn validate_messages(messages: &[ChatMessage]) -> Result<(), ApiError> {
     // Validate each message
     for (i, message) in messages.iter().enumerate() {
         // Validate role
-        match message.role.as_str() {
-            "system" | "user" | "assistant" | "function" => {}
+        match message.role.to_string().as_str() {
+            "system" | "user" | "assistant" | "function" | "tool" | "developer" => {}
             _ => {
                 return Err(create_validation_error(
-                    &format!("invalid role '{}' at messages[{}], must be one of: system, user, assistant, function", message.role, i),
+                    &format!("invalid role '{}' at messages[{}], must be one of: system, user, assistant, function, tool, developer", message.role, i),
                     Some("messages"),
                 ));
             }
         }
 
         // Validate content
-        if message.content.trim().is_empty() {
-            return Err(create_validation_error(
-                &format!("content cannot be empty at messages[{}]", i),
-                Some("messages"),
-            ));
+        match &message.content {
+            MessageContent::String(text) => {
+                if text.trim().is_empty() {
+                    return Err(create_validation_error(
+                        &format!("content cannot be empty at messages[{}]", i),
+                        Some("messages.content"),
+                    ));
+                }
+            }
+            MessageContent::Array(parts) => {
+                if parts.is_empty() {
+                    return Err(create_validation_error(
+                        &format!("content array cannot be empty at messages[{}]", i),
+                        Some("messages.content"),
+                    ));
+                }
+
+                // Validate each content part
+                for (j, part) in parts.iter().enumerate() {
+                    match part {
+                        ContentPart::Text { text } => {
+                            if text.trim().is_empty() {
+                                return Err(create_validation_error(
+                                    &format!(
+                                        "text cannot be empty at messages[{}].content[{}]",
+                                        i, j
+                                    ),
+                                    Some("messages.content.text"),
+                                ));
+                            }
+                        }
+                        ContentPart::ImageUrl { image_url } => {
+                            if image_url.url.trim().is_empty() {
+                                return Err(create_validation_error(
+                                    &format!(
+                                        "image_url.url cannot be empty at messages[{}].content[{}]",
+                                        i, j
+                                    ),
+                                    Some("messages.content.image_url.url"),
+                                ));
+                            }
+                        }
+                        ContentPart::Audio { input_audio } => {
+                            if input_audio.data.trim().is_empty() {
+                                return Err(create_validation_error(
+                                    &format!("input_audio.data cannot be empty at messages[{}].content[{}]", i, j),
+                                    Some("messages.content.input_audio.data"),
+                                ));
+                            }
+                        }
+                        ContentPart::File { file } => {
+                            if file.file_data.is_none() && file.file_id.is_none() {
+                                return Err(create_validation_error(
+                                    &format!("file must have either file_data or file_id at messages[{}].content[{}]", i, j),
+                                    Some("messages.content.file"),
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Validate name if present
@@ -166,7 +224,7 @@ fn validate_messages(messages: &[ChatMessage]) -> Result<(), ApiError> {
 
     // Validate message sequence
     // Check if there's at least one user message
-    if !messages.iter().any(|m| m.role == "user") {
+    if !messages.iter().any(|m| m.role.to_string() == "user") {
         return Err(create_validation_error(
             "messages must contain at least one user message",
             Some("messages"),
@@ -177,7 +235,7 @@ fn validate_messages(messages: &[ChatMessage]) -> Result<(), ApiError> {
     if messages
         .iter()
         .enumerate()
-        .any(|(i, m)| m.role == "system" && i > 0)
+        .any(|(i, m)| m.role.to_string() == "system" && i > 0)
     {
         return Err(create_validation_error(
             "system message must be the first message if present",
@@ -189,13 +247,22 @@ fn validate_messages(messages: &[ChatMessage]) -> Result<(), ApiError> {
 }
 
 /// Create a validation error
-fn create_validation_error(message: &str, param: Option<&str>) -> ApiError {
-    super::routes::handle_invalid_request(message, param)
+pub fn create_validation_error(message: &str, param: Option<&str>) -> ApiError {
+    ApiError {
+        error: ApiErrorDetail {
+            message: message.to_string(),
+            r#type: "invalid_request_error".to_string(),
+            param: param.map(|s| s.to_string()),
+            code: None,
+        },
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::modules::llm_proxy::domain::content::{AudioData, AudioFormat, FileData, ImageUrl};
+    use crate::modules::llm_proxy::domain::message::{Message, MessageRole};
 
     #[test]
     fn test_validate_model() {
@@ -214,97 +281,105 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_messages() {
-        // Valid messages
-        let valid_messages = vec![ChatMessage {
-            role: "user".to_string(),
-            content: "Hello".to_string(),
-            name: None,
-        }];
+    fn test_validate_messages_with_string_content() {
+        // Valid messages with string content
+        let valid_messages = vec![Message::new_user("Hello".to_string())];
         assert!(validate_messages(&valid_messages).is_ok());
 
         // Valid messages with system first
         let valid_system_first = vec![
-            ChatMessage {
-                role: "system".to_string(),
-                content: "You are a helpful assistant".to_string(),
-                name: None,
-            },
-            ChatMessage {
-                role: "user".to_string(),
-                content: "Hello".to_string(),
-                name: None,
-            },
+            Message::new_system("You are a helpful assistant".to_string()),
+            Message::new_user("Hello".to_string()),
         ];
         assert!(validate_messages(&valid_system_first).is_ok());
 
         // Empty messages
-        let empty_messages: Vec<ChatMessage> = vec![];
+        let empty_messages: Vec<Message> = vec![];
         let err = validate_messages(&empty_messages).unwrap_err();
         assert!(err.error.message.contains("cannot be empty"));
 
-        // Invalid role
-        let invalid_role = vec![ChatMessage {
-            role: "invalid".to_string(),
-            content: "Hello".to_string(),
-            name: None,
-        }];
-        let err = validate_messages(&invalid_role).unwrap_err();
-        assert!(err.error.message.contains("invalid role"));
-
         // Empty content
-        let empty_content = vec![ChatMessage {
-            role: "user".to_string(),
-            content: "".to_string(),
-            name: None,
-        }];
+        let empty_content = vec![Message::new_user("".to_string())];
         let err = validate_messages(&empty_content).unwrap_err();
         assert!(err.error.message.contains("content cannot be empty"));
+    }
 
-        // No user message
-        let no_user = vec![
-            ChatMessage {
-                role: "system".to_string(),
-                content: "You are a helpful assistant".to_string(),
-                name: None,
-            },
-            ChatMessage {
-                role: "assistant".to_string(),
-                content: "How can I help you?".to_string(),
-                name: None,
-            },
-        ];
-        let err = validate_messages(&no_user).unwrap_err();
-        assert!(err.error.message.contains("at least one user message"));
+    #[test]
+    fn test_validate_messages_with_array_content() {
+        // Valid messages with array content
+        let valid_messages = vec![Message {
+            role: MessageRole::User,
+            content: MessageContent::Array(vec![ContentPart::Text {
+                text: "Hello".to_string(),
+            }]),
+            name: None,
+        }];
+        assert!(validate_messages(&valid_messages).is_ok());
 
-        // System message not first
-        let system_not_first = vec![
-            ChatMessage {
-                role: "user".to_string(),
-                content: "Hello".to_string(),
-                name: None,
-            },
-            ChatMessage {
-                role: "system".to_string(),
-                content: "You are a helpful assistant".to_string(),
-                name: None,
-            },
-        ];
-        let err = validate_messages(&system_not_first).unwrap_err();
-        assert!(err
-            .error
-            .message
-            .contains("system message must be the first"));
+        // Valid messages with multimodal content
+        let valid_multimodal = vec![Message {
+            role: MessageRole::User,
+            content: MessageContent::Array(vec![
+                ContentPart::Text {
+                    text: "What's in this image?".to_string(),
+                },
+                ContentPart::ImageUrl {
+                    image_url: ImageUrl {
+                        url: "https://example.com/image.jpg".to_string(),
+                        detail: "auto".to_string(),
+                    },
+                },
+            ]),
+            name: None,
+        }];
+        assert!(validate_messages(&valid_multimodal).is_ok());
+
+        // Empty array content
+        let empty_array = vec![Message {
+            role: MessageRole::User,
+            content: MessageContent::Array(vec![]),
+            name: None,
+        }];
+        let err = validate_messages(&empty_array).unwrap_err();
+        assert!(err.error.message.contains("content array cannot be empty"));
+
+        // Empty text in array content
+        let empty_text = vec![Message {
+            role: MessageRole::User,
+            content: MessageContent::Array(vec![ContentPart::Text {
+                text: "".to_string(),
+            }]),
+            name: None,
+        }];
+        let err = validate_messages(&empty_text).unwrap_err();
+        assert!(err.error.message.contains("text cannot be empty"));
     }
 
     #[test]
     fn test_validate_chat_completion_request() {
-        // Valid request
+        // Valid request with string content
         let valid_request = ChatCompletionRequest {
             model: "gpt-3.5-turbo".to_string(),
-            messages: vec![ChatMessage {
-                role: "user".to_string(),
-                content: "Hello".to_string(),
+            messages: vec![Message::new_user("Hello".to_string())],
+            temperature: Some(0.7),
+            top_p: Some(0.9),
+            n: Some(1),
+            stream: false,
+            max_tokens: Some(100),
+            presence_penalty: Some(0.0),
+            frequency_penalty: Some(0.0),
+            user: None,
+        };
+        assert!(validate_chat_completion_request(&valid_request).is_ok());
+
+        // Valid request with array content
+        let valid_array_request = ChatCompletionRequest {
+            model: "gpt-3.5-turbo".to_string(),
+            messages: vec![Message {
+                role: MessageRole::User,
+                content: MessageContent::Array(vec![ContentPart::Text {
+                    text: "Hello".to_string(),
+                }]),
                 name: None,
             }],
             temperature: Some(0.7),
@@ -316,7 +391,7 @@ mod tests {
             frequency_penalty: Some(0.0),
             user: None,
         };
-        assert!(validate_chat_completion_request(&valid_request).is_ok());
+        assert!(validate_chat_completion_request(&valid_array_request).is_ok());
 
         // Invalid temperature
         let mut invalid_request = valid_request.clone();

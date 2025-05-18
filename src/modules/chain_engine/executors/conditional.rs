@@ -7,9 +7,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::modules::chain_engine::chain_definition::{Chain, ChainStep, ConditionalBranch};
 use crate::modules::chain_engine::condition_evaluator::ConditionEvaluator;
 use crate::modules::chain_engine::context::{ChainContext, StepResult};
+use crate::modules::chain_engine::definition::{Chain, ChainStep, ConditionalBranch};
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 use crate::modules::chain_engine::executors::StepExecutor;
 
@@ -38,7 +38,7 @@ impl StepExecutor for ConditionalExecutor {
 
         // Extract step configuration
         let config = match &step.step_type {
-            crate::modules::chain_engine::chain_definition::StepType::Conditional {
+            crate::modules::chain_engine::definition::StepType::Conditional {
                 branches,
                 default_branch,
             } => {

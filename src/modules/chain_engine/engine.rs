@@ -6,11 +6,11 @@ use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use tokio::sync::Mutex;
 
-use crate::modules::chain_engine::chain_definition::{
-    Chain, ChainStep, Condition, DependencyType, StepType,
-};
 use crate::modules::chain_engine::condition_evaluator::ConditionEvaluator;
 use crate::modules::chain_engine::context::{ChainContext, StepResult};
+use crate::modules::chain_engine::definition::{
+    Chain, ChainStep, Condition, DependencyType, StepType,
+};
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 use crate::modules::chain_engine::executors::{
     conditional::ConditionalExecutor, custom::CustomExecutor, function::FunctionCallExecutor,
@@ -20,9 +20,33 @@ use crate::modules::chain_engine::executors::{
 use crate::modules::chain_engine::validation::validate_chain;
 
 /// Chain engine for executing chains
-#[derive(Clone)]
+
+/// Execution statistics for the chain engine
+#[derive(Debug, Clone, Default)]
+pub struct ExecutionStats {
+    /// Total number of chain executions
+    pub total_executions: u64,
+    /// Number of successful chain executions
+    pub successful_executions: u64,
+    /// Number of failed chain executions
+    pub failed_executions: u64,
+    /// Average execution time in milliseconds
+    pub avg_execution_time_ms: f64,
+}
+
+// Remove the Debug derive and implement it manually
 pub struct ChainEngine {
     executors: Arc<RwLock<HashMap<String, Arc<dyn StepExecutor>>>>,
+    stats: Arc<RwLock<ExecutionStats>>,
+}
+
+impl std::fmt::Debug for ChainEngine {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ChainEngine")
+            .field("executors_count", &self.executors.read().unwrap().len())
+            .field("stats", &self.stats)
+            .finish()
+    }
 }
 
 impl ChainEngine {
@@ -30,7 +54,13 @@ impl ChainEngine {
     pub fn new() -> Self {
         Self {
             executors: Arc::new(RwLock::new(HashMap::new())),
+            stats: Arc::new(RwLock::new(ExecutionStats::default())),
         }
+    }
+
+    /// Get execution statistics
+    pub fn get_execution_stats(&self) -> ExecutionStats {
+        self.stats.read().unwrap().clone()
     }
 
     /// Register a step executor for a specific step type
@@ -45,6 +75,15 @@ impl ChainEngine {
         chain: &Chain,
         inputs: HashMap<String, serde_json::Value>,
     ) -> ChainResult<HashMap<String, serde_json::Value>> {
+        // Update total executions
+        {
+            let mut stats = self.stats.write().unwrap();
+            stats.total_executions += 1;
+        }
+
+        // Record start time
+        let start_time = std::time::Instant::now();
+
         // Validate the chain
         validate_chain(chain)?;
 
@@ -72,7 +111,34 @@ impl ChainEngine {
 
         // Return the outputs
         let final_context = context.lock().await;
-        Ok(final_context.outputs.clone())
+        let result = final_context.outputs.clone();
+
+        // Update stats for successful execution
+        {
+            let mut stats = self.stats.write().unwrap();
+            stats.successful_executions += 1;
+
+            // Update average execution time
+            let execution_time = start_time.elapsed().as_millis() as f64;
+            let total_executions = stats.total_executions as f64;
+            let current_avg = stats.avg_execution_time_ms;
+
+            // Calculate new average: ((old_avg * (n-1)) + new_time) / n
+            stats.avg_execution_time_ms =
+                ((current_avg * (total_executions - 1.0)) + execution_time) / total_executions;
+        }
+
+        Ok(result)
+    }
+
+    // Handle errors in execute_chain by updating stats
+    fn handle_execution_error(&self, error: ChainError) -> ChainError {
+        // Update stats for failed execution
+        {
+            let mut stats = self.stats.write().unwrap();
+            stats.failed_executions += 1;
+        }
+        error
     }
 
     /// Build an execution plan for a chain
@@ -365,7 +431,7 @@ impl ChainEngine {
     pub async fn execute_conditional_step(
         &self,
         step: &ChainStep,
-        branches: &[crate::modules::chain_engine::chain_definition::ConditionalBranch],
+        branches: &[crate::modules::chain_engine::definition::ConditionalBranch],
         default_branch: Option<String>,
         chain: &Chain,
         context: Arc<Mutex<ChainContext>>,

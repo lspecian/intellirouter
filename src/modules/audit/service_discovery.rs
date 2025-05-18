@@ -20,7 +20,7 @@ use super::types::{
 };
 
 /// Service Discovery Validator
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ServiceDiscovery {
     /// Discovery configuration
     config: DiscoveryConfig,

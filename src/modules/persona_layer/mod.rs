@@ -11,7 +11,7 @@
 
 mod error;
 mod guardrails;
-mod manager;
+pub mod manager;
 mod persona;
 
 pub use error::PersonaError;

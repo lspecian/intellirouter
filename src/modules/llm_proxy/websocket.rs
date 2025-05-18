@@ -1,48 +1,41 @@
-//! LLM Proxy WebSocket Support
+//! WebSocket support for LLM Proxy
 //!
-//! This module implements WebSocket support for the LLM Proxy server,
-//! providing an alternative to SSE streaming for clients that require
-//! bidirectional communication.
+//! This module implements WebSocket support for the LLM Proxy, allowing
+//! for streaming responses and bidirectional communication.
 
 use axum::{
     extract::{
-        ws::{Message, WebSocket, WebSocketUpgrade},
-        State,
+        ws::{Message, WebSocket},
+        State, WebSocketUpgrade,
     },
     response::IntoResponse,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
 use serde_json::json;
+use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info};
 
 use super::{
+    dto::{ApiError, ChatCompletionRequest},
     formatting,
-    routes::{ApiError, ChatCompletionRequest},
-    server::AppState,
+    telemetry_integration::AppState,
     validation,
 };
 
-/// Handler for WebSocket upgrade
-pub async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {
-    info!("WebSocket connection requested");
+/// Handler for WebSocket connections
+pub async fn websocket_handler(
+    ws: WebSocketUpgrade,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     ws.on_upgrade(|socket| handle_socket(socket, state))
 }
 
-/// Handle WebSocket connection
+/// Handle a WebSocket connection
 async fn handle_socket(socket: WebSocket, state: AppState) {
-    info!("WebSocket connection established");
-
-    // Update active connections count
-    {
-        let mut shared = state.shared.lock().await;
-        shared.active_connections += 1;
-        debug!("Active connections: {}", shared.active_connections);
-    }
-
     let (mut sender, mut receiver) = socket.split();
 
-    // Create a channel for sending messages to the WebSocket
+    // Create a channel for sending messages back to the client
     let (tx, mut rx) = mpsc::channel::<Result<Message, ApiError>>(32);
 
     // Spawn a task to forward messages from the channel to the WebSocket
@@ -56,44 +49,47 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                     }
                 }
                 Err(err) => {
-                    // Convert API error to WebSocket message
-                    let error_json = serde_json::to_string(&err).unwrap_or_default();
-                    if let Err(e) = sender.send(Message::Text(error_json)).await {
+                    // Convert the error to a JSON message
+                    let error_json = serde_json::to_string(&err).unwrap_or_else(|e| {
+                        format!(
+                            "{{\"error\":{{\"message\":\"Failed to serialize error: {}\"}}}}",
+                            e
+                        )
+                    });
+                    if let Err(e) = sender.send(Message::Text(error_json.into())).await {
                         error!("Error sending error message: {}", e);
                         break;
                     }
-                    break;
                 }
             }
         }
     });
 
-    // Process incoming WebSocket messages
-    while let Some(Ok(msg)) = receiver.next().await {
-        match process_message(msg, &state, &tx).await {
-            Ok(should_break) => {
-                if should_break {
-                    break;
+    // Process incoming messages
+    let mut recv_task = tokio::spawn(async move {
+        while let Some(Ok(msg)) = receiver.next().await {
+            let should_close = match process_message(msg, &state, &tx).await {
+                Ok(close) => close,
+                Err(e) => {
+                    error!("Error processing message: {}", e);
+                    true
                 }
-            }
-            Err(e) => {
-                error!("Error processing WebSocket message: {}", e);
+            };
+
+            if should_close {
                 break;
             }
         }
-    }
+    });
 
-    // Cancel the send task when the connection is closed
-    send_task.abort();
-
-    // Update active connections count
-    {
-        let mut shared = state.shared.lock().await;
-        shared.active_connections -= 1;
-        debug!(
-            "WebSocket connection closed. Active connections: {}",
-            shared.active_connections
-        );
+    // Wait for either task to complete
+    tokio::select! {
+        _ = &mut send_task => {
+            recv_task.abort();
+        }
+        _ = &mut recv_task => {
+            send_task.abort();
+        }
     }
 
     info!("WebSocket connection closed");
@@ -113,10 +109,8 @@ pub async fn process_message(
             let request: ChatCompletionRequest = match serde_json::from_str(&text) {
                 Ok(req) => req,
                 Err(e) => {
-                    let error = super::routes::handle_invalid_request(
-                        &format!("Invalid JSON: {}", e),
-                        None,
-                    );
+                    let error =
+                        validation::create_validation_error(&format!("Invalid JSON: {}", e), None);
                     tx.send(Err(error)).await.map_err(|e| e.to_string())?;
                     return Ok(false);
                 }
@@ -140,7 +134,7 @@ pub async fn process_message(
         Message::Binary(_) => {
             // Binary messages are not supported
             let error =
-                super::routes::handle_invalid_request("Binary messages are not supported", None);
+                validation::create_validation_error("Binary messages are not supported", None);
             tx.send(Err(error)).await.map_err(|e| e.to_string())?;
             Ok(false)
         }
@@ -157,13 +151,12 @@ pub async fn process_message(
         }
         Message::Close(_) => {
             // Client requested close
-            debug!("Client requested close");
             Ok(true)
         }
     }
 }
 
-/// Handle a non-streaming chat completion request
+/// Handle a non-streaming request
 async fn handle_non_streaming_request(
     request: &ChatCompletionRequest,
     tx: &mpsc::Sender<Result<Message, ApiError>>,
@@ -172,13 +165,13 @@ async fn handle_non_streaming_request(
     let last_user_message = request
         .messages
         .iter()
-        .filter(|m| m.role == "user")
+        .filter(|m| m.role.to_string() == "user")
         .last()
-        .map(|m| m.content.as_str())
-        .unwrap_or("Hello");
+        .map(|m| m.extract_text_content())
+        .unwrap_or_else(|| "Hello".to_string());
 
     // Generate a response based on the user's message
-    let response_content = formatting::generate_contextual_response(last_user_message);
+    let response_content = formatting::generate_contextual_response(&last_user_message);
 
     // Apply temperature if specified
     let response_content =
@@ -196,16 +189,16 @@ async fn handle_non_streaming_request(
         "stop",
     );
 
-    // Send the response as a WebSocket message
-    let response_json = serde_json::to_string(&response).unwrap_or_default();
-    tx.send(Ok(Message::Text(response_json)))
+    // Send the response
+    let response_json = serde_json::to_string(&response).map_err(|e| e.to_string())?;
+    tx.send(Ok(Message::Text(response_json.into())))
         .await
         .map_err(|e| e.to_string())?;
 
     Ok(())
 }
 
-/// Handle a streaming chat completion request
+/// Handle a streaming request
 async fn handle_streaming_request(
     request: &ChatCompletionRequest,
     tx: &mpsc::Sender<Result<Message, ApiError>>,
@@ -214,13 +207,13 @@ async fn handle_streaming_request(
     let last_user_message = request
         .messages
         .iter()
-        .filter(|m| m.role == "user")
+        .filter(|m| m.role.to_string() == "user")
         .last()
-        .map(|m| m.content.as_str())
-        .unwrap_or("Hello");
+        .map(|m| m.extract_text_content())
+        .unwrap_or_else(|| "Hello".to_string());
 
     // Generate a response based on the user's message
-    let response_content = formatting::generate_contextual_response(last_user_message);
+    let response_content = formatting::generate_contextual_response(&last_user_message);
 
     // Apply temperature if specified
     let response_content =
@@ -233,16 +226,20 @@ async fn handle_streaming_request(
     // Create streaming chunks
     let chunks = formatting::create_streaming_chunks(&request.model, &response_content, 5);
 
-    // Send each chunk as a separate WebSocket message
+    // Send each chunk
     for chunk in chunks {
-        let chunk_json = serde_json::to_string(&chunk).unwrap_or_default();
-        tx.send(Ok(Message::Text(chunk_json)))
-            .await
-            .map_err(|e| e.to_string())?;
-
-        // Add a small delay between chunks to simulate streaming
-        tokio::time::sleep(tokio::time::Duration::from_millis(300)).await;
+        let chunk_json = serde_json::to_string(&chunk).map_err(|e| e.to_string())?;
+        tx.send(Ok(Message::Text(
+            format!("data: {}\n\n", chunk_json).into(),
+        )))
+        .await
+        .map_err(|e| e.to_string())?;
     }
+
+    // Send the final [DONE] message
+    tx.send(Ok(Message::Text("data: [DONE]\n\n".to_string().into())))
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -250,59 +247,37 @@ async fn handle_streaming_request(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::modules::llm_proxy::{Provider, ServerConfig, SharedState};
-    use axum::body::Body;
-    use axum::extract::ws::WebSocketUpgrade;
-    use axum::http::Request;
-    use axum::routing::get;
-    use axum::Router;
+    use crate::modules::llm_proxy::domain::message::Message as DomainMessage;
+    use crate::modules::telemetry::{CostCalculator, TelemetryManager};
+    use axum::extract::ws::Message as WsMessage;
     use std::sync::Arc;
-    use tokio::sync::Mutex;
-    use tower::ServiceExt;
-
-    // Helper function to create a test app state
-    fn create_test_app_state() -> AppState {
-        AppState {
-            provider: Provider::OpenAI,
-            config: ServerConfig {
-                host: "127.0.0.1".to_string(),
-                port: 8080,
-                max_connections: 100,
-                request_timeout_secs: 30,
-                cors_enabled: false,
-                cors_allowed_origins: vec![],
-            },
-            shared: Arc::new(Mutex::new(SharedState::new())),
-            telemetry: None,
-            cost_calculator: None,
-        }
-    }
 
     #[tokio::test]
-    async fn test_ws_handler_upgrade() {
-        // Create a router with the WebSocket handler
-        let app = Router::new()
-            .route("/ws", get(ws_handler))
-            .with_state(create_test_app_state());
+    async fn test_process_message_invalid_json() {
+        // Create test app state
+        let telemetry = Arc::new(TelemetryManager::new_for_testing());
+        let cost_calculator = Arc::new(CostCalculator::new());
 
-        // Create a WebSocket upgrade request
-        let request = Request::builder()
-            .uri("/ws")
-            .header("connection", "upgrade")
-            .header("upgrade", "websocket")
-            .header("sec-websocket-key", "dGhlIHNhbXBsZSBub25jZQ==")
-            .header("sec-websocket-version", "13")
-            .body(Body::empty())
-            .unwrap();
+        let app_state = AppState {
+            telemetry,
+            cost_calculator,
+        };
 
-        // Call the handler
-        let response = app.oneshot(request).await.unwrap();
+        // Create a channel for testing
+        let (tx, mut rx) = mpsc::channel::<Result<WsMessage, ApiError>>(32);
 
-        // Verify that the response is a WebSocket upgrade
-        assert_eq!(response.status(), 101); // 101 Switching Protocols
-        assert_eq!(
-            response.headers().get("upgrade").unwrap().to_str().unwrap(),
-            "websocket"
-        );
+        // Process an invalid JSON message
+        let result =
+            process_message(WsMessage::Text("invalid json".to_string()), &app_state, &tx).await;
+
+        // Verify the result
+        assert!(result.is_ok());
+        assert!(!result.unwrap()); // Should not close the connection
+
+        // Verify that an error was sent
+        let response = rx.recv().await.unwrap();
+        assert!(response.is_err());
+        let error = response.unwrap_err();
+        assert!(error.error.message.contains("Invalid JSON"));
     }
 }

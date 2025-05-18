@@ -5,8 +5,8 @@
 use async_trait::async_trait;
 use std::sync::Arc;
 
-use crate::modules::chain_engine::chain_definition::ChainStep;
 use crate::modules::chain_engine::context::{ChainContext, StepResult};
+use crate::modules::chain_engine::definition::ChainStep;
 use crate::modules::chain_engine::error::ChainResult;
 
 /// Interface for step executors

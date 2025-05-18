@@ -7,8 +7,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::modules::chain_engine::chain_definition::ChainStep;
 use crate::modules::chain_engine::context::{ChainContext, StepResult};
+use crate::modules::chain_engine::definition::ChainStep;
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 use crate::modules::chain_engine::executors::StepExecutor;
 
@@ -37,12 +37,15 @@ impl LLMInferenceExecutor {
 
         for input in &step.inputs {
             let value = match &input.source {
-                crate::modules::chain_engine::chain_definition::DataSource::ChainInput {
-                    input_name,
-                } => context.inputs.get(input_name).cloned().ok_or_else(|| {
-                    ChainError::VariableNotFound(format!("Chain input not found: {}", input_name))
-                })?,
-                crate::modules::chain_engine::chain_definition::DataSource::Variable {
+                crate::modules::chain_engine::definition::DataSource::ChainInput { input_name } => {
+                    context.inputs.get(input_name).cloned().ok_or_else(|| {
+                        ChainError::VariableNotFound(format!(
+                            "Chain input not found: {}",
+                            input_name
+                        ))
+                    })?
+                }
+                crate::modules::chain_engine::definition::DataSource::Variable {
                     variable_name,
                 } => context
                     .variables
@@ -54,7 +57,7 @@ impl LLMInferenceExecutor {
                             variable_name
                         ))
                     })?,
-                crate::modules::chain_engine::chain_definition::DataSource::StepOutput {
+                crate::modules::chain_engine::definition::DataSource::StepOutput {
                     step_id,
                     output_name,
                 } => {
@@ -73,12 +76,10 @@ impl LLMInferenceExecutor {
                             ))
                         })?
                 }
-                crate::modules::chain_engine::chain_definition::DataSource::Literal { value } => {
+                crate::modules::chain_engine::definition::DataSource::Literal { value } => {
                     value.clone()
                 }
-                crate::modules::chain_engine::chain_definition::DataSource::Template {
-                    template,
-                } => {
+                crate::modules::chain_engine::definition::DataSource::Template { template } => {
                     // Simple template substitution
                     let mut result = template.clone();
 
@@ -126,7 +127,7 @@ impl StepExecutor for LLMInferenceExecutor {
 
         // Extract step configuration
         let config = match &step.step_type {
-            crate::modules::chain_engine::chain_definition::StepType::LLMInference {
+            crate::modules::chain_engine::definition::StepType::LLMInference {
                 model: _,
                 system_prompt: _,
                 temperature: _,

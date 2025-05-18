@@ -10,6 +10,8 @@ use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, error, info, warn};
+
+#[cfg(feature = "pdf-export")]
 use wkhtmltopdf::{pdf::*, PdfApplication};
 
 use crate::modules::audit::report::AuditReport;
@@ -77,10 +79,21 @@ impl ReportExporter {
             ExportFormat::Markdown => self.to_markdown(report)?,
             ExportFormat::Html => self.to_html(report)?,
             ExportFormat::Pdf => {
-                // For PDF, we first generate HTML, then convert it to PDF
-                let html_content = self.to_html(report)?;
-                self.html_to_pdf(&html_content, path)?;
-                return Ok(());
+                #[cfg(feature = "pdf-export")]
+                {
+                    // For PDF, we first generate HTML, then convert it to PDF
+                    let html_content = self.to_html(report)?;
+                    self.html_to_pdf(&html_content, path)?;
+                    return Ok(());
+                }
+
+                #[cfg(not(feature = "pdf-export"))]
+                {
+                    error!("PDF export is not available. Compile with the 'pdf-export' feature to enable it.");
+                    return Err(AuditError::ReportGenerationError(
+                        "PDF export is not available. Compile with the 'pdf-export' feature to enable it.".to_string()
+                    ));
+                }
             }
         };
 
@@ -137,6 +150,7 @@ impl ReportExporter {
     }
 
     /// Convert HTML to PDF
+    #[cfg(feature = "pdf-export")]
     fn html_to_pdf(&self, html_content: &str, output_path: &Path) -> Result<(), AuditError> {
         // Initialize PDF application
         let pdf_app = match PdfApplication::new() {
@@ -159,7 +173,7 @@ impl ReportExporter {
             .title("IntelliRouter Audit Report");
 
         // Generate PDF from HTML
-        let pdf = builder.build_from_html(html_content).map_err(|e| {
+        let mut pdf = builder.build_from_html(html_content).map_err(|e| {
             AuditError::ReportGenerationError(format!("Failed to generate PDF: {}", e))
         })?;
 

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
-use crate::modules::chain_engine::chain_definition::{
+use crate::modules::chain_engine::definition::{
     Chain, ChainStep, DependencyType, Role, StepDependency, StepType,
 };
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
@@ -56,7 +56,7 @@ fn create_test_chain() -> Chain {
         dependencies: Vec::new(),
         variables: HashMap::new(),
         error_handling:
-            crate::modules::chain_engine::chain_definition::ErrorHandlingStrategy::StopOnError,
+            crate::modules::chain_engine::definition::ErrorHandlingStrategy::StopOnError,
         max_parallel_steps: None,
         timeout: None,
     }

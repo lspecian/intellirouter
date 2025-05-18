@@ -9,8 +9,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
-use crate::modules::chain_engine::chain_definition::{Chain, ChainStep};
 use crate::modules::chain_engine::context::{ChainContext, StepResult};
+use crate::modules::chain_engine::definition::{Chain, ChainStep};
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 use crate::modules::chain_engine::executors::StepExecutor;
 
@@ -40,7 +40,7 @@ impl StepExecutor for ParallelExecutor {
 
         // Extract step configuration
         let config = match &step.step_type {
-            crate::modules::chain_engine::chain_definition::StepType::Parallel {
+            crate::modules::chain_engine::definition::StepType::Parallel {
                 steps,
                 wait_for_all,
             } => {

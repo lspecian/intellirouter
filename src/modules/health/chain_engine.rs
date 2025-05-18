@@ -8,19 +8,19 @@ use std::sync::Arc;
 use serde_json::json;
 use tracing::{debug, error, info};
 
-use crate::modules::chain_engine::core::ChainEngineCore;
+use crate::modules::chain_engine::ChainEngine;
 use crate::modules::health::{DiagnosticsProvider, HealthCheckManager, HttpDependencyChecker};
 
 /// Chain Engine diagnostics provider
 #[derive(Debug)]
 pub struct ChainEngineDiagnosticsProvider {
-    /// Chain engine core
-    chain_engine: Arc<ChainEngineCore>,
+    /// Chain engine
+    chain_engine: Arc<ChainEngine>,
 }
 
 impl ChainEngineDiagnosticsProvider {
     /// Create a new chain engine diagnostics provider
-    pub fn new(chain_engine: Arc<ChainEngineCore>) -> Self {
+    pub fn new(chain_engine: Arc<ChainEngine>) -> Self {
         Self { chain_engine }
     }
 }
@@ -53,69 +53,36 @@ impl DiagnosticsProvider for ChainEngineDiagnosticsProvider {
 
         diagnostics.insert(
             "average_execution_time_ms".to_string(),
-            json!(stats.average_execution_time_ms),
+            json!(stats.avg_execution_time_ms),
         );
 
         // More detailed diagnostics for higher verbosity levels
         if verbosity >= 2 {
-            // Add executor-specific statistics
-            let executor_stats = self.chain_engine.get_executor_stats();
-            let executor_details: Vec<serde_json::Value> = executor_stats
-                .iter()
-                .map(|(executor_type, stats)| {
-                    json!({
-                        "executor_type": executor_type,
-                        "executions": stats.executions,
-                        "successes": stats.successes,
-                        "failures": stats.failures,
-                        "average_time_ms": stats.average_time_ms,
-                    })
-                })
-                .collect();
-
+            // Stub implementation for executor-specific statistics
+            // TODO: Implement get_executor_stats in ChainEngine
+            let executor_details: Vec<serde_json::Value> = Vec::new();
             diagnostics.insert("executor_stats".to_string(), json!(executor_details));
 
-            // Add recent executions
-            let recent_executions = self.chain_engine.get_recent_executions(10);
-            let execution_details: Vec<serde_json::Value> = recent_executions
-                .iter()
-                .map(|execution| {
-                    json!({
-                        "chain_id": execution.chain_id,
-                        "status": execution.status.to_string(),
-                        "execution_time_ms": execution.execution_time_ms,
-                        "timestamp": execution.timestamp,
-                    })
-                })
-                .collect();
-
+            // Stub implementation for recent executions
+            // TODO: Implement get_recent_executions in ChainEngine
+            let execution_details: Vec<serde_json::Value> = Vec::new();
             diagnostics.insert("recent_executions".to_string(), json!(execution_details));
         }
 
         // Even more detailed diagnostics for highest verbosity level
         if verbosity >= 3 {
             // Add registered chain definitions
-            let chain_definitions = self.chain_engine.list_chain_definitions();
-            let chain_details: Vec<serde_json::Value> = chain_definitions
-                .iter()
-                .map(|def| {
-                    json!({
-                        "id": def.id,
-                        "name": def.name,
-                        "version": def.version,
-                        "steps": def.steps.len(),
-                    })
-                })
-                .collect();
-
+            // TODO: Implement list_chain_definitions in ChainEngine
+            let chain_details: Vec<serde_json::Value> = Vec::new();
             diagnostics.insert("chain_definitions".to_string(), json!(chain_details));
 
             // Add memory usage statistics
+            // TODO: Implement get_context_cache_size and get_result_cache_size in ChainEngine
             diagnostics.insert(
                 "memory_usage".to_string(),
                 json!({
-                    "context_cache_size": self.chain_engine.get_context_cache_size(),
-                    "result_cache_size": self.chain_engine.get_result_cache_size(),
+                    "context_cache_size": 0,
+                    "result_cache_size": 0,
                 }),
             );
         }
@@ -126,7 +93,7 @@ impl DiagnosticsProvider for ChainEngineDiagnosticsProvider {
 
 /// Create a health check manager for the Chain Engine service
 pub fn create_chain_engine_health_manager(
-    chain_engine: Arc<ChainEngineCore>,
+    chain_engine: Arc<ChainEngine>,
     redis_url: Option<String>,
     router_endpoint: Option<String>,
 ) -> HealthCheckManager {

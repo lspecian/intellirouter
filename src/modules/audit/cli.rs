@@ -37,6 +37,17 @@ pub enum DeploymentScenario {
     LocalDev,
 }
 
+impl std::fmt::Display for DeploymentScenario {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DeploymentScenario::SingleNode => write!(f, "single-node"),
+            DeploymentScenario::Distributed => write!(f, "distributed"),
+            DeploymentScenario::Cloud => write!(f, "cloud"),
+            DeploymentScenario::LocalDev => write!(f, "local-dev"),
+        }
+    }
+}
+
 /// CI/CD platform
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum CIPlatform {
@@ -216,7 +227,7 @@ pub async fn run_audit_cli(args: AuditCliArgs) -> Result<(), AuditError> {
 
                 // Create dashboard configuration
                 let dashboard_config = DashboardConfig {
-                    host: dashboard_host,
+                    host: dashboard_host.clone(),
                     port: dashboard_port,
                     static_dir: "src/modules/audit/static".to_string(),
                     enable_history: true,

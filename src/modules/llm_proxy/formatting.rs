@@ -6,15 +6,17 @@
 use chrono::Utc;
 use uuid::Uuid;
 
-use super::routes::{
+use super::domain::content::MessageContent;
+use super::domain::message::{Message, MessageRole};
+use super::dto::{
     ChatCompletionChoice, ChatCompletionChunk, ChatCompletionChunkChoice, ChatCompletionRequest,
-    ChatCompletionResponse, ChatMessage, ChatMessageDelta, TokenUsage,
+    ChatCompletionResponse, ChatMessageDelta, TokenUsage,
 };
 
 /// Format a non-streaming response
 pub fn format_completion_response(
     model: &str,
-    messages: &[ChatMessage],
+    messages: &[Message],
     content: &str,
     finish_reason: &str,
 ) -> ChatCompletionResponse {
@@ -25,11 +27,7 @@ pub fn format_completion_response(
         model: normalize_model_name(model),
         choices: vec![ChatCompletionChoice {
             index: 0,
-            message: ChatMessage {
-                role: "assistant".to_string(),
-                content: content.to_string(),
-                name: None,
-            },
+            message: Message::new_assistant(content.to_string()),
             finish_reason: finish_reason.to_string(),
         }],
         usage: calculate_token_usage(messages, content),
@@ -63,7 +61,7 @@ pub fn generate_response_id() -> String {
 }
 
 /// Calculate token usage for a request and response
-pub fn calculate_token_usage(messages: &[ChatMessage], response_content: &str) -> TokenUsage {
+pub fn calculate_token_usage(messages: &[Message], response_content: &str) -> TokenUsage {
     let prompt_tokens = calculate_prompt_tokens(messages);
     let completion_tokens = calculate_completion_tokens(response_content);
 
@@ -75,12 +73,26 @@ pub fn calculate_token_usage(messages: &[ChatMessage], response_content: &str) -
 }
 
 /// Calculate approximate token count for the prompt
-pub fn calculate_prompt_tokens(messages: &[ChatMessage]) -> u32 {
+pub fn calculate_prompt_tokens(messages: &[Message]) -> u32 {
     // More accurate token counting
     let mut count = 0;
     for message in messages {
         // Roughly 4 chars per token
-        count += (message.content.len() / 4) as u32;
+        let content_length = match &message.content {
+            MessageContent::String(text) => text.len(),
+            MessageContent::Array(parts) => {
+                // Sum up the lengths of all text parts
+                parts
+                    .iter()
+                    .map(|part| match part {
+                        super::domain::content::ContentPart::Text { text } => text.len(),
+                        _ => 20, // Rough estimate for non-text parts
+                    })
+                    .sum()
+            }
+        };
+
+        count += (content_length / 4) as u32;
         // Add overhead for message format
         count += 4; // For role and message overhead
     }
@@ -135,6 +147,8 @@ pub fn generate_contextual_response(user_message: &str) -> String {
         || user_message.to_lowercase().contains("what is")
     {
         "I'd be happy to explain that topic. As a mock response, I don't have the actual knowledge to provide a detailed explanation. When connected to a real LLM, I'll be able to provide comprehensive explanations on a wide range of topics.".to_string()
+    } else if user_message.to_lowercase().contains("image") {
+        "I see you're asking about an image. As a mock response, I can't actually process or analyze images yet. When connected to a real multimodal LLM, I'll be able to understand and discuss the content of images you share.".to_string()
     } else {
         "This is a mock response from the IntelliRouter LLM proxy. Your message has been received, but I'm not yet connected to a real LLM provider. This functionality will be implemented in future tasks.".to_string()
     }
@@ -237,4 +251,59 @@ pub fn create_streaming_chunks(
     chunks
 }
 
-// Tests for this module are in formatting_tests.rs
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::modules::llm_proxy::domain::content::{ContentPart, ImageUrl};
+
+    #[test]
+    fn test_calculate_prompt_tokens_with_string_content() {
+        let messages = vec![
+            Message::new_user("Hello, how are you?".to_string()),
+            Message::new_assistant("I'm doing well, thank you!".to_string()),
+        ];
+
+        let tokens = calculate_prompt_tokens(&messages);
+        assert!(tokens > 0);
+    }
+
+    #[test]
+    fn test_calculate_prompt_tokens_with_array_content() {
+        let messages = vec![Message {
+            role: MessageRole::User,
+            content: MessageContent::Array(vec![
+                ContentPart::Text {
+                    text: "What's in this image?".to_string(),
+                },
+                ContentPart::ImageUrl {
+                    image_url: ImageUrl {
+                        url: "https://example.com/image.jpg".to_string(),
+                        detail: "auto".to_string(),
+                    },
+                },
+            ]),
+            name: None,
+        }];
+
+        let tokens = calculate_prompt_tokens(&messages);
+        assert!(tokens > 0);
+    }
+
+    #[test]
+    fn test_format_completion_response() {
+        let model = "gpt-3.5-turbo";
+        let messages = vec![Message::new_user("Hello".to_string())];
+        let content = "Hi there!";
+        let finish_reason = "stop";
+
+        let response = format_completion_response(model, &messages, content, finish_reason);
+
+        assert_eq!(response.model, model);
+        assert_eq!(response.choices.len(), 1);
+        assert_eq!(response.choices[0].message.role, MessageRole::Assistant);
+        assert!(
+            matches!(response.choices[0].message.content, MessageContent::String(ref s) if s == content)
+        );
+        assert_eq!(response.choices[0].finish_reason, finish_reason);
+    }
+}

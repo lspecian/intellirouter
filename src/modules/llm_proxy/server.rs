@@ -126,8 +126,10 @@ pub async fn start_server(config: ServerConfig, provider: Provider) -> Result<()
     };
 
     // Create health check manager
+    let registry_api = crate::modules::model_registry::api::ModelRegistryApi::new();
+    let registry = registry_api.registry();
     let health_manager = crate::modules::health::router::create_router_health_manager(
-        Arc::new(crate::modules::model_registry::api::ModelRegistryApi::new()),
+        registry,
         crate::modules::router_core::RouterConfig::default(),
         Some(
             config

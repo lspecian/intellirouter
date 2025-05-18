@@ -5,7 +5,8 @@
 #[cfg(test)]
 mod tests {
     use super::super::formatting::*;
-    use super::super::routes::{ChatCompletionRequest, ChatMessage};
+    use super::super::routes::ChatCompletionRequest;
+    use crate::modules::model_registry::connectors::ChatMessage;
 
     #[test]
     fn test_generate_response_id() {
@@ -34,11 +35,15 @@ mod tests {
                 role: "system".to_string(),
                 content: "You are a helpful assistant.".to_string(),
                 name: None,
+                function_call: None,
+                tool_calls: None,
             },
             ChatMessage {
                 role: "user".to_string(),
                 content: "Hello, how are you?".to_string(),
                 name: None,
+                function_call: None,
+                tool_calls: None,
             },
         ];
 
@@ -63,6 +68,8 @@ mod tests {
             role: "user".to_string(),
             content: "Hello".to_string(),
             name: None,
+            function_call: None,
+            tool_calls: None,
         }];
         let content = "Hi there! How can I help you today?";
         let finish_reason = "stop";

@@ -74,6 +74,7 @@ impl RouterError {
             RouterError::Timeout(_) => ErrorCategory::Timeout,
             RouterError::FallbackError(_) => ErrorCategory::Other,
             RouterError::Other(_) => ErrorCategory::Other,
+            RouterError::SerializationError(_) => ErrorCategory::Other,
         }
     }
 

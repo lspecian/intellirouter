@@ -5,7 +5,7 @@
 //! integration with LLM requests.
 
 mod file_source;
-mod manager;
+pub mod manager;
 mod source;
 mod types;
 

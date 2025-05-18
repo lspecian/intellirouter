@@ -150,6 +150,28 @@ impl AuditReport {
         &self.metrics
     }
 
+    /// Get the number of test results
+    pub fn get_test_count(&self) -> usize {
+        self.test_results.len()
+    }
+
+    /// Get the number of errors
+    pub fn get_error_count(&self) -> usize {
+        self.errors.len()
+    }
+
+    /// Check if the report has errors
+    pub fn has_errors(&self) -> bool {
+        !self.errors.is_empty()
+    }
+
+    /// Check if the report contains a test with the given name
+    pub fn contains_test(&self, test_name: &str) -> bool {
+        self.test_results
+            .iter()
+            .any(|test| test.test_flow.to_string() == test_name)
+    }
+
     /// Save the report to a file
     pub fn save(&self, path: &str, format: ReportFormat) -> Result<(), AuditError> {
         let path = Path::new(path);

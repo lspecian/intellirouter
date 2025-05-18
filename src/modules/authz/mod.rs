@@ -1,4 +1,7 @@
-pub mod auth;
+// Commented out due to lifetime issues
+// pub mod auth;
+pub mod auth_fixed;
+pub use auth_fixed as auth;
 pub mod middleware;
 pub mod rbac;
 pub mod routes;

@@ -17,8 +17,9 @@ mod tests {
     use tokio::sync::Mutex;
     use tower::ServiceExt;
 
-    use crate::modules::llm_proxy::routes::{ChatCompletionRequest, ChatMessage};
+    use crate::modules::llm_proxy::routes::ChatCompletionRequest;
     use crate::modules::llm_proxy::server::AppState;
+    use crate::modules::model_registry::connectors::ChatMessage;
 
     // Helper function to create a test app state
     fn create_test_app_state() -> AppState {
@@ -31,7 +32,14 @@ mod tests {
                 request_timeout_secs: 30,
                 cors_enabled: false,
                 cors_allowed_origins: vec![],
+                redis_url: None,
             },
+            shared: Arc::new(Mutex::new(SharedState {
+                active_connections: 0,
+                shutting_down: false,
+            })),
+            telemetry: None,
+            cost_calculator: None,
             shared: Arc::new(Mutex::new(SharedState::new())),
         }
     }
@@ -80,6 +88,8 @@ mod tests {
                 role: "user".to_string(),
                 content: "Hello!".to_string(),
                 name: None,
+                function_call: None,
+                tool_calls: None,
             }],
             temperature: Some(0.7),
             top_p: None,
@@ -152,6 +162,8 @@ mod tests {
                 role: "user".to_string(),
                 content: "Hello!".to_string(),
                 name: None,
+                function_call: None,
+                tool_calls: None,
             }],
             temperature: Some(0.7),
             top_p: None,

@@ -13,9 +13,10 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info};
 
 use crate::modules::model_registry::{storage::ModelRegistry, ModelMetadata};
+use crate::modules::router_core::config::StrategyConfig;
 use crate::modules::router_core::{
     BaseStrategy, RouterError, RoutingMetadata, RoutingRequest, RoutingStrategy,
-    RoutingStrategyTrait, StrategyConfig,
+    RoutingStrategyTrait,
 };
 
 /// Round-robin routing strategy

@@ -8,6 +8,8 @@ mod exporters;
 mod topology;
 mod visualization;
 
+use crate::modules::audit::reporting::visualization::Visualizer;
+
 pub use dashboard::{DashboardConfig, DashboardServer};
 pub use exporters::{ExportFormat, ReportExporter};
 pub use topology::{SystemTopology, TopologyEdge, TopologyNode};

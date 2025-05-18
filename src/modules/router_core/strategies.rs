@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 use std::time::Instant;
 
+use crate::modules::router_core::config::StrategyConfig;
 use async_trait::async_trait;
 
 // Strategy implementations
@@ -24,10 +25,7 @@ use crate::modules::model_registry::{
     ModelMetadata, ModelStatus,
 };
 
-use super::{
-    RouterError, RoutingMetadata, RoutingRequest, RoutingStrategy, RoutingStrategyTrait,
-    StrategyConfig,
-};
+use super::{RouterError, RoutingMetadata, RoutingRequest, RoutingStrategy, RoutingStrategyTrait};
 
 /// Base strategy implementation providing common functionality for all routing strategies
 #[derive(Debug)]

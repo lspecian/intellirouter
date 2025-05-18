@@ -16,6 +16,7 @@ use super::guardrails::{Guardrail, ResponseFormat, TopicRestriction};
 use super::persona::Persona;
 
 /// Manager for personas
+#[derive(Debug)]
 pub struct PersonaManager {
     /// Registered personas
     personas: HashMap<String, Persona>,

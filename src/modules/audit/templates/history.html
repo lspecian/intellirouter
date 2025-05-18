@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>History Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        .filters {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .timeline {
+            margin-top: 30px;
+            position: relative;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 120px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #ddd;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+            padding-left: 150px;
+        }
+
+        .timeline-date {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100px;
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .timeline-content {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .timeline-title {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .timeline-details {
+            margin-top: 10px;
+            color: #666;
+        }
+
+        .event-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .event-deployment {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .event-incident {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .event-maintenance {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .event-update {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>System History Dashboard</h1>
+
+        <div class="filters">
+            <div class="filter-group">
+                <label for="event-type">Event Type</label>
+                <select id="event-type">
+                    <option value="all">All Events</option>
+                    <option value="deployment">Deployments</option>
+                    <option value="incident">Incidents</option>
+                    <option value="maintenance">Maintenance</option>
+                    <option value="update">Updates</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="date-from">From Date</label>
+                <input type="date" id="date-from">
+            </div>
+
+            <div class="filter-group">
+                <label for="date-to">To Date</label>
+                <input type="date" id="date-to">
+            </div>
+
+            <div class="filter-group">
+                <label for="service">Service</label>
+                <select id="service">
+                    <option value="all">All Services</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="timeline">
+            <!-- Timeline items will be inserted here -->
+        </div>
+    </div>
+</body>
+
+</html>

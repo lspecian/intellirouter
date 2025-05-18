@@ -7,8 +7,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::modules::chain_engine::chain_definition::ChainStep;
 use crate::modules::chain_engine::context::{ChainContext, StepResult};
+use crate::modules::chain_engine::definition::ChainStep;
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 use crate::modules::chain_engine::executors::StepExecutor;
 
@@ -64,7 +64,7 @@ impl StepExecutor for FunctionCallExecutor {
 
         // Extract step configuration
         let config = match &step.step_type {
-            crate::modules::chain_engine::chain_definition::StepType::FunctionCall {
+            crate::modules::chain_engine::definition::StepType::FunctionCall {
                 function_name,
                 arguments,
             } => {

@@ -4,9 +4,9 @@
 //! It allows for creating complex workflows with multiple steps, conditional branching,
 //! parallel execution, and data transformation between steps.
 
-mod chain_definition;
 mod condition_evaluator;
 mod context;
+mod definition;
 mod engine;
 mod error;
 mod executors;
@@ -15,9 +15,9 @@ mod validation;
 #[cfg(test)]
 mod tests;
 
-pub use chain_definition::*;
 pub use condition_evaluator::*;
 pub use context::*;
+pub use definition::*;
 pub use engine::*;
 pub use error::*;
 pub use executors::StepExecutor;

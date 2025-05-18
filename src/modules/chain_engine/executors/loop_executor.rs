@@ -7,9 +7,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::modules::chain_engine::chain_definition::{Chain, ChainStep, Condition};
 use crate::modules::chain_engine::condition_evaluator::ConditionEvaluator;
 use crate::modules::chain_engine::context::{ChainContext, StepResult};
+use crate::modules::chain_engine::definition::{Chain, ChainStep, Condition};
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 use crate::modules::chain_engine::executors::StepExecutor;
 
@@ -41,7 +41,7 @@ impl StepExecutor for LoopExecutor {
 
         // Extract step configuration
         let config = match &step.step_type {
-            crate::modules::chain_engine::chain_definition::StepType::Loop {
+            crate::modules::chain_engine::definition::StepType::Loop {
                 iteration_variable,
                 max_iterations,
                 steps,

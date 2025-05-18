@@ -9,6 +9,7 @@ use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+use crate::modules::router_core::config::StrategyConfig;
 use crate::modules::router_core::RegistryIntegration;
 
 use lru::LruCache;
@@ -27,7 +28,7 @@ use super::{
     },
     strategies::{PriorityConfig, PriorityStrategy, RoundRobinConfig, RoundRobinStrategy},
     BaseStrategy, Router, RouterConfig, RouterError, RoutingMetadata, RoutingRequest,
-    RoutingResponse, RoutingStrategy, RoutingStrategyTrait, StrategyConfig,
+    RoutingResponse, RoutingStrategy, RoutingStrategyTrait,
 };
 
 /// Router implementation
@@ -452,6 +453,11 @@ impl Router for RouterImpl {
         let mut cache = self.cache.lock().unwrap();
         cache.clear();
         debug!("Router cache cleared");
+    }
+
+    /// Get the model registry
+    fn get_registry(&self) -> Arc<ModelRegistry> {
+        self.registry.clone()
     }
 }
 
