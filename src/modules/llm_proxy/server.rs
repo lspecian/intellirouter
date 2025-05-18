@@ -195,24 +195,26 @@ pub fn create_router(state: AppState) -> Router {
     // Create a basic router without state first
     let router = Router::new()
         // Legacy health check endpoint (simple version)
-        .route("/health/simple", get(health_check));
+        .route("/health/simple", get(health_check))
+        // Chat completions endpoints
+        .route(
+            "/v1/chat/completions",
+            post(super::routes::chat_completions),
+        )
+        .route(
+            "/v1/chat/completions/stream",
+            post(super::routes::chat_completions_stream),
+        );
 
     // If telemetry is available, create a router with telemetry state
-    if let (Some(telemetry), Some(cost_calculator)) = (state.telemetry, state.cost_calculator) {
-        // Create telemetry state
-        let telemetry_state = telemetry_integration::AppState {
-            telemetry,
-            cost_calculator,
-        };
-
+    if let (Some(telemetry), Some(cost_calculator)) =
+        (state.telemetry.clone(), state.cost_calculator.clone())
+    {
         // Create router with telemetry state
-        telemetry_integration::create_router_with_telemetry(
-            telemetry_state.telemetry.clone(),
-            telemetry_state.cost_calculator.clone(),
-        )
+        telemetry_integration::create_router_with_telemetry(telemetry, cost_calculator)
     } else {
-        // Return the basic router without state
-        router
+        // Return the basic router with state
+        router.with_state(state)
     }
 }
 

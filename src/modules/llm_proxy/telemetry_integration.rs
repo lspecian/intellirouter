@@ -21,12 +21,8 @@ use crate::modules::telemetry::{
     TelemetryManager,
 };
 
-/// Application state for sharing between handlers
-#[derive(Clone)]
-pub struct AppState {
-    pub telemetry: Arc<TelemetryManager>,
-    pub cost_calculator: Arc<crate::modules::telemetry::CostCalculator>,
-}
+// Use the AppState from server.rs
+pub use super::server::AppState;
 
 use super::dto::{ApiError, ChatCompletionRequest, ChatCompletionResponse};
 use super::service::ChatCompletionService;
@@ -38,49 +34,37 @@ pub fn create_router_with_telemetry(
     telemetry: Arc<TelemetryManager>,
     cost_calculator: Arc<crate::modules::telemetry::CostCalculator>,
 ) -> Router {
-    let app_state = AppState {
-        telemetry: telemetry.clone(),
-        cost_calculator,
-    };
-
-    // Create a simple router without using the handler functions directly
+    // Create a router with the actual handler functions from routes.rs
     let router = Router::new()
         .route(
             "/v1/chat/completions",
-            axum::routing::post(|| async {
-                // This is a placeholder that will be replaced by the actual implementation
-                // in the real application
-                Json(ChatCompletionResponse {
-                    id: "placeholder".to_string(),
-                    object: "chat.completion".to_string(),
-                    created: 0,
-                    model: "placeholder".to_string(),
-                    choices: vec![],
-                    usage: super::dto::TokenUsage {
-                        prompt_tokens: 0,
-                        completion_tokens: 0,
-                        total_tokens: 0,
-                    },
-                })
-            }),
+            post(super::routes::chat_completions),
         )
         .route(
             "/v1/chat/completions/stream",
-            axum::routing::post(|| async {
-                // This is a placeholder that will be replaced by the actual implementation
-                // in the real application
-                let stream: Pin<
-                    Box<dyn Stream<Item = Result<Event, std::convert::Infallible>> + Send>,
-                > = stream::once(async { Ok(Event::default().data("placeholder")) }).boxed();
-
-                Sse::new(stream)
-            }),
+            post(super::routes::chat_completions_stream),
         )
         // Add telemetry middleware
-        .layer(from_fn_with_state(telemetry, telemetry_middleware))
-        .with_state(app_state);
+        .layer(from_fn_with_state(telemetry.clone(), telemetry_middleware));
 
-    router
+    // Create a minimal app state with just the telemetry components
+    let app_state = AppState {
+        provider: super::Provider::OpenAI, // Default provider
+        config: super::server::ServerConfig {
+            host: "127.0.0.1".to_string(),
+            port: 8080,
+            max_connections: 1000,
+            request_timeout_secs: 30,
+            cors_enabled: false,
+            cors_allowed_origins: vec!["*".to_string()],
+            redis_url: None,
+        },
+        shared: std::sync::Arc::new(tokio::sync::Mutex::new(super::server::SharedState::new())),
+        telemetry: Some(telemetry),
+        cost_calculator: Some(cost_calculator),
+    };
+
+    router.with_state(app_state)
 }
 
 /// Initialize telemetry and create a router

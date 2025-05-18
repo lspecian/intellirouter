@@ -22,8 +22,8 @@ use tracing::{debug, error};
 use super::domain::message::Message;
 use super::dto::{ApiError, ChatCompletionRequest, ChatCompletionResponse};
 use super::router_integration::create_mock_router_service;
+use super::server::AppState;
 use super::service::ChatCompletionService;
-use super::telemetry_integration::AppState;
 use super::validation;
 use crate::modules::router_core::RouterError;
 
@@ -144,8 +144,19 @@ mod tests {
         let cost_calculator = Arc::new(CostCalculator::new());
 
         let app_state = AppState {
-            telemetry,
-            cost_calculator,
+            provider: super::Provider::OpenAI,
+            config: super::server::ServerConfig {
+                host: "127.0.0.1".to_string(),
+                port: 8080,
+                max_connections: 1000,
+                request_timeout_secs: 30,
+                cors_enabled: false,
+                cors_allowed_origins: vec!["*".to_string()],
+                redis_url: None,
+            },
+            shared: std::sync::Arc::new(tokio::sync::Mutex::new(super::server::SharedState::new())),
+            telemetry: Some(telemetry),
+            cost_calculator: Some(cost_calculator),
         };
 
         // Create test request
@@ -179,8 +190,19 @@ mod tests {
         let cost_calculator = Arc::new(CostCalculator::new());
 
         let app_state = AppState {
-            telemetry,
-            cost_calculator,
+            provider: super::Provider::OpenAI,
+            config: super::server::ServerConfig {
+                host: "127.0.0.1".to_string(),
+                port: 8080,
+                max_connections: 1000,
+                request_timeout_secs: 30,
+                cors_enabled: false,
+                cors_allowed_origins: vec!["*".to_string()],
+                redis_url: None,
+            },
+            shared: std::sync::Arc::new(tokio::sync::Mutex::new(super::server::SharedState::new())),
+            telemetry: Some(telemetry),
+            cost_calculator: Some(cost_calculator),
         };
 
         // Create test request

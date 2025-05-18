@@ -99,7 +99,7 @@ fn validate_model(model: &str) -> Result<(), ApiError> {
     // Check if model is supported
     // This will be expanded in future tasks when model registry is implemented
     // For now, just check if it's a known format
-    let supported_prefixes = ["gpt-", "text-", "claude-", "mistral-", "llama-"];
+    let supported_prefixes = ["gpt-", "text-", "claude-", "mistral-", "llama-", "mock-"];
     if !supported_prefixes
         .iter()
         .any(|prefix| model.starts_with(prefix))

@@ -8,7 +8,7 @@ echo
 
 # Start router role
 echo "Starting router role..."
-cargo run -- --role router &
+cargo run -- run --role router &
 ROUTER_PID=$!
 
 # Wait for router to start
@@ -16,7 +16,7 @@ echo "Waiting for router to start..."
 sleep 5
 
 # Test endpoint
-ENDPOINT="http://localhost:9000/v1/chat/completions"
+ENDPOINT="http://localhost:8080/v1/chat/completions"
 
 # Test payload
 PAYLOAD='{

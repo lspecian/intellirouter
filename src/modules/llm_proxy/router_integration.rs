@@ -168,6 +168,108 @@ pub fn create_mock_router_service() -> RouterService {
     RouterService::new(Arc::new(router))
 }
 
+/// Create a router service with a custom configuration for testing
+pub fn create_mock_router_service_with_config(
+    router_config: crate::modules::router_core::RouterConfig,
+) -> RouterService {
+    use crate::modules::llm_proxy::MockModelBackend;
+    use crate::modules::model_registry::{ModelMetadata, ModelStatus, ModelType};
+    use std::collections::HashMap;
+
+    // Create a model registry
+    let registry = Arc::new(ModelRegistry::new());
+
+    // Create mock models
+    let models = vec![
+        ModelMetadata::new(
+            "mock-llama".to_string(),
+            "Mock LLaMA".to_string(),
+            "mock".to_string(),
+            "1.0".to_string(),
+            "https://api.mock.com/v1/completions".to_string(),
+        ),
+        ModelMetadata::new(
+            "mock-gpt".to_string(),
+            "Mock GPT".to_string(),
+            "mock".to_string(),
+            "1.0".to_string(),
+            "https://api.mock.com/v1/completions".to_string(),
+        ),
+    ];
+
+    // Register models
+    for mut model in models {
+        model.status = ModelStatus::Available;
+        model.model_type = ModelType::TextGeneration;
+        registry.register_model(model.clone()).unwrap();
+
+        // Create and register mock backend
+        let backend =
+            MockModelBackend::new(model.id.clone(), model.name.clone(), model.provider.clone());
+        registry.register_connector(&model.id, Arc::new(backend));
+    }
+
+    // Create router with the provided config
+    let router = RouterImpl::new(router_config, registry).unwrap();
+
+    // Create router service
+    RouterService::new(Arc::new(router))
+}
+
+/// Create a router service with error simulation for testing
+pub fn create_mock_router_service_with_errors() -> RouterService {
+    use crate::modules::llm_proxy::MockModelBackend;
+    use crate::modules::model_registry::{ModelMetadata, ModelStatus, ModelType};
+    use crate::modules::router_core::{RouterConfig, RoutingStrategy};
+    use std::collections::HashMap;
+
+    // Create a model registry
+    let registry = Arc::new(ModelRegistry::new());
+
+    // Create mock models
+    let models = vec![ModelMetadata::new(
+        "mock-llama".to_string(),
+        "Mock LLaMA".to_string(),
+        "mock".to_string(),
+        "1.0".to_string(),
+        "https://api.mock.com/v1/completions".to_string(),
+    )];
+
+    // Register models
+    for mut model in models {
+        model.status = ModelStatus::Available;
+        model.model_type = ModelType::TextGeneration;
+        registry.register_model(model.clone()).unwrap();
+
+        // Create and register mock backend with error simulation
+        let backend =
+            MockModelBackend::new(model.id.clone(), model.name.clone(), model.provider.clone())
+                .with_simulated_errors(true);
+        registry.register_connector(&model.id, Arc::new(backend));
+    }
+
+    // Create router config
+    let config = RouterConfig {
+        strategy: RoutingStrategy::RoundRobin,
+        strategy_config: None,
+        fallback_strategies: vec![], // No fallbacks to ensure errors are propagated
+        retry_policy: crate::modules::router_core::RetryPolicy::None, // No retries
+        circuit_breaker: crate::modules::router_core::CircuitBreakerConfig::default(),
+        degraded_service_mode: crate::modules::router_core::DegradedServiceMode::default(),
+        retryable_errors: std::collections::HashSet::new(),
+        cache_routing_decisions: false,
+        max_cache_size: 100,
+        collect_metrics: true,
+        ..Default::default()
+    };
+
+    // Create router
+    let router = RouterImpl::new(config, registry).unwrap();
+
+    // Create router service
+    RouterService::new(Arc::new(router))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -19,7 +19,7 @@ use tracing::{debug, error, info};
 use super::{
     dto::{ApiError, ChatCompletionRequest},
     formatting,
-    telemetry_integration::AppState,
+    server::AppState,
     validation,
 };
 
@@ -259,8 +259,19 @@ mod tests {
         let cost_calculator = Arc::new(CostCalculator::new());
 
         let app_state = AppState {
-            telemetry,
-            cost_calculator,
+            provider: super::Provider::OpenAI,
+            config: super::server::ServerConfig {
+                host: "127.0.0.1".to_string(),
+                port: 8080,
+                max_connections: 1000,
+                request_timeout_secs: 30,
+                cors_enabled: false,
+                cors_allowed_origins: vec!["*".to_string()],
+                redis_url: None,
+            },
+            shared: std::sync::Arc::new(tokio::sync::Mutex::new(super::server::SharedState::new())),
+            telemetry: Some(telemetry),
+            cost_calculator: Some(cost_calculator),
         };
 
         // Create a channel for testing

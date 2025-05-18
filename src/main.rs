@@ -137,8 +137,24 @@ async fn main() {
                     // Create chain engine
                     let chain_engine = ChainEngine::new();
 
-                    // Create app with telemetry
-                    let app = axum::Router::new().with_state(telemetry.clone());
+                    // Create app with telemetry and LLM proxy routes
+                    let app_state = intellirouter::modules::llm_proxy::server::AppState {
+                        provider: intellirouter::modules::llm_proxy::Provider::OpenAI,
+                        config:
+                            intellirouter::modules::llm_proxy::server::ServerConfig::from_config(
+                                &config,
+                            ),
+                        shared: Arc::new(tokio::sync::Mutex::new(
+                            intellirouter::modules::llm_proxy::server::SharedState::new(),
+                        )),
+                        telemetry: Some(telemetry.clone()),
+                        cost_calculator: Some(Arc::new(
+                            intellirouter::modules::telemetry::CostCalculator::new(),
+                        )),
+                    };
+
+                    // Create router with routes
+                    let app = intellirouter::modules::llm_proxy::server::create_router(app_state);
 
                     // Start server
                     let addr = config.server.socket_addr();

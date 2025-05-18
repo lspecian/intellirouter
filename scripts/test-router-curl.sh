@@ -7,7 +7,7 @@ echo "===== Testing IntelliRouter Router Role with curl ====="
 echo
 
 # Test endpoint
-ENDPOINT="http://localhost:9000/v1/chat/completions"
+ENDPOINT="http://localhost:8080/v1/chat/completions"
 
 # Test payload
 PAYLOAD='{
@@ -19,7 +19,8 @@ PAYLOAD='{
     }
   ],
   "temperature": 0.7,
-  "max_tokens": 100
+  "max_tokens": 100,
+  "stream": false
 }'
 
 echo "Testing endpoint: $ENDPOINT"
@@ -31,10 +32,12 @@ echo
 echo "Sending request..."
 RESPONSE=$(curl -s -X POST "$ENDPOINT" \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
   -d "$PAYLOAD")
 
 echo "Response:"
-echo "$RESPONSE" | jq .
+echo "Raw response: $RESPONSE"
+echo "$RESPONSE" | jq . || echo "Failed to parse response as JSON"
 
 # Check if the response has the expected fields
 if echo "$RESPONSE" | jq -e '.id' > /dev/null 2>&1 && \
