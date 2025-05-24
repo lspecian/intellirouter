@@ -400,9 +400,6 @@ impl DashboardServer {
 
     /// Create router
     fn create_router(&self) -> Router {
-        let dashboards = Arc::clone(&self.dashboards);
-        let config = self.config.clone();
-
         Router::new()
             // API routes
             .route("/api/dashboards", get(Self::get_dashboards))
@@ -429,7 +426,7 @@ impl DashboardServer {
                 get(Self::dashboard_view_handler),
             )
             // State
-            .with_state((dashboards, config))
+            .with_state((Arc::clone(&self.dashboards), self.config.clone()))
     }
 
     /// Index handler

@@ -316,6 +316,7 @@ pub struct PriorityFilter {
 
 impl PriorityFilter {
     /// Create a new priority filter
+    #[allow(dead_code)]
     pub fn new(min_priority: SuggestionPriority) -> Self {
         Self { min_priority }
     }
@@ -343,6 +344,7 @@ pub struct ImpactFilter {
 
 impl ImpactFilter {
     /// Create a new impact filter
+    #[allow(dead_code)]
     pub fn new(min_impact: super::types::EstimatedImpact) -> Self {
         Self { min_impact }
     }
@@ -370,6 +372,7 @@ pub struct DifficultyFilter {
 
 impl DifficultyFilter {
     /// Create a new difficulty filter
+    #[allow(dead_code)]
     pub fn new(max_difficulty: super::types::ImplementationDifficulty) -> Self {
         Self { max_difficulty }
     }

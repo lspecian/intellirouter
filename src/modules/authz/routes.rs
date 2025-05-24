@@ -43,7 +43,8 @@ pub struct AddPermissionRequest {
 }
 
 pub fn create_routes(_auth_manager: Arc<AuthManager>, _rbac_manager: Arc<RbacManager>) -> Router {
-    // Temporarily disable routes to fix compilation issues
+    // TODO: Re-enable authorization routes once dependencies are resolved.
+    // Issue: [Link to GitHub issue to be created for tracking this task]
     Router::new()
 }
 

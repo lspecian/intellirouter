@@ -234,6 +234,6 @@ mod tests {
     async fn test_audit_controller_creation() {
         let config = AuditConfig::default();
         let controller = AuditController::new(config);
-        assert!(controller.config.enabled);
+        assert!(controller._config.enabled);
     }
 }
