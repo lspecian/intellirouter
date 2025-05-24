@@ -94,7 +94,7 @@ impl LLMInferenceExecutor {
             };
 
             // Apply transformation if specified
-            let transformed_value = if let Some(transform) = &input.transform {
+            let transformed_value = if let Some(_transform) = &input.transform {
                 // This would call a function to apply the transformation
                 // apply_transform(transform, &value)?
                 value.clone() // Simplified for now

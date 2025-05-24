@@ -20,7 +20,7 @@ pub trait ResultAdapter: Send + Sync {
 pub struct DefaultResultAdapter;
 
 impl ResultAdapter for DefaultResultAdapter {
-    fn adapt_result(&self, mode: Mode, result: &str) -> Result<TaskResult, IntegrationError> {
+    fn adapt_result(&self, _mode: Mode, result: &str) -> Result<TaskResult, IntegrationError> {
         // Parse the result string as JSON
         let result_value: serde_json::Value = serde_json::from_str(result).map_err(|e| {
             IntegrationError::InvalidResultFormat(format!("Failed to parse result as JSON: {}", e))

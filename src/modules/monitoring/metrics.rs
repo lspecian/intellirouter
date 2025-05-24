@@ -352,19 +352,19 @@ pub struct MetricsSystem {
     /// Metrics collector
     collector: Arc<MetricsCollector>,
     /// Prometheus registry
-    registry: Registry,
+    _registry: Registry,
 }
 
 impl MetricsSystem {
     /// Create a new metrics system
     pub fn new(config: MetricConfig) -> Self {
         let collector = Arc::new(MetricsCollector::new(config.clone()));
-        let registry = Registry::new();
+        let _registry = Registry::new();
 
         Self {
             config,
             collector,
-            registry,
+            _registry,
         }
     }
 

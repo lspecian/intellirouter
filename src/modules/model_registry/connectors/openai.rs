@@ -10,7 +10,7 @@ use super::{
     StreamingResponse, TokenUsage, ToolCall, ToolCallDelta,
 };
 use async_trait::async_trait;
-use futures::{stream, StreamExt};
+use futures::stream;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;

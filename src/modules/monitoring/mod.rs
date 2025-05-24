@@ -55,9 +55,9 @@ pub struct MonitoringSystem {
     audit_controller: Option<Arc<AuditController>>,
     /// Test engine
     #[cfg(feature = "test-harness")]
-    test_engine: Option<Arc<TestEngine>>,
+    _test_engine: Option<Arc<TestEngine>>,
     #[cfg(not(feature = "test-harness"))]
-    test_engine: Option<Arc<()>>, // Placeholder when test-harness is not enabled
+    _test_engine: Option<Arc<()>>, // Placeholder when test-harness is not enabled
 }
 
 /// Configuration for the monitoring system
@@ -110,7 +110,7 @@ impl MonitoringSystem {
             improvement_system,
             telemetry_manager: None,
             audit_controller: None,
-            test_engine: None,
+            _test_engine: None,
         }
     }
 
@@ -215,7 +215,7 @@ impl MonitoringSystem {
     /// Integrate with test engine
     #[cfg(feature = "test-harness")]
     pub fn with_test_engine(&mut self, test_engine: Arc<TestEngine>) -> &mut Self {
-        self.test_engine = Some(test_engine);
+        self._test_engine = Some(test_engine);
         self
     }
 
@@ -223,6 +223,7 @@ impl MonitoringSystem {
     #[cfg(not(feature = "test-harness"))]
     pub fn with_test_engine(&mut self, _test_engine: Arc<()>) -> &mut Self {
         // Do nothing when test-harness is not enabled
+        self._test_engine = None; // Ensure it's assigned if it's a field
         self
     }
 

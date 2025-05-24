@@ -60,7 +60,7 @@ struct DashboardState {
     /// Report history
     history: Arc<RwLock<Vec<HistoricalReport>>>,
     /// Dashboard configuration
-    config: DashboardConfig,
+    _config: DashboardConfig,
 }
 
 /// Historical report
@@ -91,7 +91,7 @@ impl DashboardServer {
         let state = Arc::new(DashboardState {
             report: Arc::clone(&report),
             history: Arc::new(RwLock::new(Vec::new())),
-            config: config.clone(),
+            _config: config.clone(),
         });
 
         Self { config, state }
@@ -215,8 +215,8 @@ impl DashboardServer {
 
     /// Get historical report
     async fn get_historical_report(
-        State(state): State<Arc<DashboardState>>,
-        Path(id): Path<String>,
+        State(_state): State<Arc<DashboardState>>,
+        Path(_id): Path<String>,
     ) -> Result<Json<Option<AuditReport>>, StatusCode> {
         // In a real implementation, this would fetch the historical report from storage
         // For now, we'll just return None
@@ -395,7 +395,7 @@ impl DashboardServer {
 
     /// Export report
     async fn export_report(
-        State(state): State<Arc<DashboardState>>,
+        State(_state): State<Arc<DashboardState>>,
         Json(payload): Json<ExportRequest>,
     ) -> Result<Json<ExportResponse>, StatusCode> {
         // In a real implementation, this would export the report to a file

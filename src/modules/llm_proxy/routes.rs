@@ -14,7 +14,6 @@ use axum::{
 use futures::stream;
 use std::convert::Infallible;
 use std::time::Duration;
-use tracing::error;
 
 use super::dto::{ApiError, ChatCompletionRequest, ChatCompletionResponse};
 use super::server::AppState;
@@ -96,7 +95,7 @@ pub async fn chat_completions(
         Ok(response) => Ok(Json(response)),
         Err(err) => {
             error!("Error processing completion request: {}", err);
-            Err(convert_router_error_to_api_error(err))
+            Err(_convert_router_error_to_api_error(err))
         }
     }
 }
@@ -144,7 +143,7 @@ pub async fn chat_completions_stream(
 }
 
 /// Convert a router error to an API error
-fn convert_router_error_to_api_error(err: RouterError) -> ApiError {
+fn _convert_router_error_to_api_error(err: RouterError) -> ApiError {
     match err {
         RouterError::NoSuitableModel(msg) => validation::create_validation_error(
             &format!("No suitable model found: {}", msg),

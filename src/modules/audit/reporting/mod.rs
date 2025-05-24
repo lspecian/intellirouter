@@ -73,7 +73,7 @@ impl ReportGenerator {
         let report = self.report.read().await;
 
         // Generate system topology visualization
-        let topology = self.generate_system_topology(&report).await?;
+        let _topology = self.generate_system_topology(&report).await?;
 
         // Generate test results visualization
         let _test_results = self.test_result_visualizer.visualize(&report).await?;

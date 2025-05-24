@@ -237,7 +237,7 @@ pub struct GrpcChainEngineClient {
 
 impl GrpcChainEngineClient {
     /// Create a new gRPC Chain Engine client
-    pub async fn new(addr: &str) -> Result<Self, tonic::transport::Error> {
+    pub async fn new(_addr: &str) -> Result<Self, tonic::transport::Error> {
         // This would create the gRPC client
         // let client = chain_engine_client::ChainEngineClient::connect(addr).await?;
         Ok(Self {

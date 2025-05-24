@@ -157,7 +157,7 @@ async fn run_security_tests(
     let mut results = Vec::new();
 
     // Run tests for each service and category
-    for (service_type, service_info) in services {
+    for (service_type, _service_info) in services {
         for category in &security_categories {
             let test_name = format!(
                 "{}_{}_security",

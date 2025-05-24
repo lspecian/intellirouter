@@ -11,7 +11,6 @@ use tracing::{error, info};
 
 use crate::modules::audit::service_discovery::{ServiceDiscovery, ServiceStatus};
 // Import ServiceType from types for other uses
-use crate::modules::audit::types::ServiceType;
 
 use super::types::{ValidationResult, ValidationType};
 
@@ -53,7 +52,7 @@ pub async fn validate_service_discovery(
                     // Count services by status
                     let mut active_count = 0;
                     let mut inactive_count = 0;
-                    let mut degraded_count = 0;
+                    let degraded_count = 0;
 
                     for service in &services {
                         match service.status {

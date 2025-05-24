@@ -199,7 +199,7 @@ impl ReportGenerator {
         &self,
         id: &str,
         title: &str,
-        description: &str,
+        _description: &str,
         severity: String,
     ) -> Result<(), OrchestratorError> {
         // Implementation would store the finding in the report
@@ -710,7 +710,7 @@ impl ContinuousImprovement {
     /// Generate improvement suggestions
     pub fn generate_suggestions(
         &self,
-        orchestrator: &dyn OrchestratorReporting,
+        _orchestrator: &dyn OrchestratorReporting,
     ) -> Result<(), OrchestratorError> {
         // This would analyze the tasks and workflows to generate improvement suggestions
         // For now, we'll just add a placeholder suggestion

@@ -37,7 +37,7 @@ pub fn format_completion_response(
 /// Format a streaming response chunk
 pub fn format_completion_chunk(
     model: &str,
-    chunk_index: u32,
+    _chunk_index: u32,
     content: Option<String>,
     role: Option<String>,
     finish_reason: Option<String>,

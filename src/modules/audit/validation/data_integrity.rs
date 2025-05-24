@@ -144,7 +144,7 @@ pub async fn validate_data_integrity(
 
 /// Run data integrity tests across services
 async fn run_data_integrity_tests(
-    services: &HashMap<ServiceType, ServiceInfo>,
+    _services: &HashMap<ServiceType, ServiceInfo>,
 ) -> Result<Vec<ValidationTestResult>, AuditError> {
     // Define test cases
     let test_cases = vec![

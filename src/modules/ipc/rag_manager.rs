@@ -186,7 +186,7 @@ pub struct GrpcRAGManagerClient {
 
 impl GrpcRAGManagerClient {
     /// Create a new gRPC RAG Manager client
-    pub async fn new(addr: &str) -> Result<Self, tonic::transport::Error> {
+    pub async fn new(_addr: &str) -> Result<Self, tonic::transport::Error> {
         // This would create the gRPC client
         // let client = rag_manager_client::RAGManagerClient::connect(addr).await?;
         Ok(Self {

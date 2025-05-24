@@ -44,7 +44,7 @@ pub struct ContentBasedStrategy {
     /// Base strategy implementation
     base: BaseStrategy,
     /// Content-based specific configuration
-    config: ContentBasedConfig,
+    _config: ContentBasedConfig,
 }
 
 impl ContentBasedStrategy {
@@ -52,7 +52,7 @@ impl ContentBasedStrategy {
     pub fn new(config: StrategyConfig, content_config: ContentBasedConfig) -> Self {
         Self {
             base: BaseStrategy::new("content_based", RoutingStrategy::ContentBased, config),
-            config: content_config,
+            _config: content_config,
         }
     }
 

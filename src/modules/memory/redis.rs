@@ -73,6 +73,7 @@ impl MemoryBackend for RedisBackend {
 
         conn.set(&key, json)
             .await
+            .map(|_: redis::Value| ()) // Explicitly map Ok(value) to Ok(())
             .map_err(|e| MemoryError::StorageError(format!("Redis error: {}", e)))?;
 
         Ok(())
@@ -88,6 +89,7 @@ impl MemoryBackend for RedisBackend {
         let key = self.get_key(id);
         conn.del(&key)
             .await
+            .map(|_: redis::Value| ()) // Explicitly map Ok(value) to Ok(())
             .map_err(|e| MemoryError::StorageError(format!("Redis error: {}", e)))?;
 
         Ok(())

@@ -41,7 +41,7 @@ pub async fn init(provider: Provider, config: &Config) -> Result<(), String> {
 
 /// Initialize the LLM proxy with the specified provider but don't start the server
 /// This is useful for testing or when you want to start the server manually
-pub fn init_without_server(provider: Provider) -> Result<(), String> {
+pub fn init_without_server(_provider: Provider) -> Result<(), String> {
     // Initialize any provider-specific resources
     // This will be expanded in future implementations
     Ok(())

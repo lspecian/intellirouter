@@ -46,7 +46,7 @@ use tracing::info;
 #[derive(Debug)]
 pub struct AuditController {
     /// Configuration for the audit controller
-    config: AuditConfig,
+    _config: AuditConfig,
     /// Boot sequence orchestrator
     boot_orchestrator: BootOrchestrator,
     /// Service discovery manager
@@ -122,7 +122,7 @@ impl AuditController {
                 Arc::clone(&report),
                 services,
             ),
-            config,
+            _config: config,
             report,
             report_generator: None,
             dashboard_server: None,
@@ -234,6 +234,6 @@ mod tests {
     async fn test_audit_controller_creation() {
         let config = AuditConfig::default();
         let controller = AuditController::new(config);
-        assert!(controller.config.enabled);
+        assert!(controller._config.enabled);
     }
 }

@@ -164,7 +164,7 @@ pub async fn validate_end_to_end_flows(
 /// Execute a single end-to-end flow test
 async fn execute_flow(
     flow: &TestFlow,
-    services: &HashMap<ServiceType, ServiceInfo>,
+    _services: &HashMap<ServiceType, ServiceInfo>,
 ) -> Result<ValidationTestResult, AuditError> {
     info!("Executing flow: {}", flow.name);
     let start_time = Instant::now();

@@ -3,15 +3,12 @@
 //! This module provides functionality for validating direct communication between services.
 
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use serde_json::json;
-use tokio::sync::RwLock;
 use tokio::time::timeout;
 use tracing::{error, info};
 
-use crate::modules::audit::report::AuditReport;
 use crate::modules::audit::types::AuditError;
 
 // Import test utilities only when the test-utils feature is enabled
@@ -39,6 +36,7 @@ pub enum ServiceType {
 
 #[cfg(not(feature = "test-utils"))]
 #[derive(Debug, Clone)]
+#[allow(dead_code)] // Fields are written during construction but may not be read elsewhere
 pub struct ServiceInfo {
     pub service_type: ServiceType,
     pub host: String,
@@ -47,7 +45,7 @@ pub struct ServiceInfo {
 
 #[cfg(not(feature = "test-utils"))]
 #[derive(Debug, Clone)]
-pub struct CommunicationTestResult {
+pub struct _CommunicationTestResult {
     pub source: ServiceType,
     pub target: ServiceType,
     pub success: bool,
@@ -246,6 +244,7 @@ async fn run_communication_tests(
 
     #[cfg(not(feature = "test-utils"))]
     {
+        let _ = services; // Explicitly use 'services' to suppress the warning
         // When test-utils is not enabled, return a placeholder result
         let mut test_details = HashMap::new();
         test_details.insert(

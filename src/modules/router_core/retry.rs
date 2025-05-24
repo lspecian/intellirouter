@@ -525,7 +525,7 @@ impl DegradedServiceHandler {
             DegradedServiceMode::DefaultModel(model_id) => {
                 // Try to use the default model
                 debug!("Degraded service mode: using default model {}", model_id);
-                let model = self.registry.get_model(model_id).map_err(|_| {
+                let _model = self.registry.get_model(model_id).map_err(|_| {
                     RouterError::NoSuitableModel(format!(
                         "Default model {} not found in degraded mode",
                         model_id

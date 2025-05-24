@@ -170,7 +170,7 @@ pub struct GrpcModelRegistryClient {
 
 impl GrpcModelRegistryClient {
     /// Create a new gRPC Model Registry client
-    pub async fn new(addr: &str) -> Result<Self, tonic::transport::Error> {
+    pub async fn new(_addr: &str) -> Result<Self, tonic::transport::Error> {
         // This would create the gRPC client
         // let client = model_registry_client::ModelRegistryClient::connect(addr).await?;
         Ok(Self {

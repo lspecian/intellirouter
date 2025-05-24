@@ -43,11 +43,12 @@ pub struct AddPermissionRequest {
 }
 
 pub fn create_routes(_auth_manager: Arc<AuthManager>, _rbac_manager: Arc<RbacManager>) -> Router {
-    // Temporarily disable routes to fix compilation issues
+    // TODO: Re-enable authorization routes once dependencies are resolved.
+    // Issue: [Link to GitHub issue to be created for tracking this task]
     Router::new()
 }
 
-async fn list_api_keys(
+async fn _list_api_keys(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<Vec<ApiKeyResponse>>, StatusCode> {
@@ -73,7 +74,7 @@ async fn list_api_keys(
     Ok(Json(responses))
 }
 
-async fn create_api_key(
+async fn _create_api_key(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(request): Json<CreateApiKeyRequest>,
@@ -108,7 +109,7 @@ async fn create_api_key(
     Ok(Json(response))
 }
 
-async fn delete_api_key(
+async fn _delete_api_key(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Path(key): Path<String>,
@@ -130,7 +131,7 @@ async fn delete_api_key(
     }
 }
 
-async fn list_roles(
+async fn _list_roles(
     State(state): State<AppState>,
     auth_context: AuthContext,
 ) -> Result<Json<Vec<super::rbac::Role>>, StatusCode> {
@@ -147,7 +148,7 @@ async fn list_roles(
     Ok(Json(roles))
 }
 
-async fn create_role(
+async fn _create_role(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Json(request): Json<AddRoleRequest>,
@@ -165,7 +166,7 @@ async fn create_role(
     Ok(StatusCode::CREATED)
 }
 
-async fn delete_role(
+async fn _delete_role(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Path(name): Path<String>,
@@ -183,7 +184,7 @@ async fn delete_role(
     Ok(StatusCode::NO_CONTENT)
 }
 
-async fn add_permission(
+async fn _add_permission(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Path(name): Path<String>,
@@ -202,7 +203,7 @@ async fn add_permission(
     Ok(StatusCode::CREATED)
 }
 
-async fn remove_permission(
+async fn _remove_permission(
     State(state): State<AppState>,
     auth_context: AuthContext,
     Path((name, permission)): Path<(String, String)>,

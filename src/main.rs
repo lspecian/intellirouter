@@ -159,7 +159,7 @@ async fn main() {
                     let _memory_manager = MemoryManager::new(memory_backend, 100);
 
                     // Create chain engine
-                    let chain_engine = ChainEngine::new();
+                    let _chain_engine = ChainEngine::new();
 
                     // Create app with telemetry and LLM proxy routes
                     let app_state = intellirouter::modules::llm_proxy::server::AppState {
@@ -243,10 +243,10 @@ async fn main() {
                     let _memory_manager = MemoryManager::new(memory_backend, 100);
 
                     // Create rag manager
-                    let rag_manager = RagManager::new();
+                    let _rag_manager = RagManager::new();
 
                     // Create persona layer manager
-                    let persona_manager = PersonaManager::new();
+                    let _persona_manager = PersonaManager::new();
 
                     // Create chain engine
                     let chain_engine = Arc::new(ChainEngine::new());
@@ -814,7 +814,7 @@ async fn main() {
 
                     // Set up signal handlers for graceful shutdown
                     let shutdown_tx = shutdown_coordinator.clone();
-                    let shutdown_coordinator5 = shutdown_coordinator.clone();
+                    let _shutdown_coordinator5 = shutdown_coordinator.clone();
                     tokio::spawn(async move {
                         match tokio::signal::ctrl_c().await {
                             Ok(()) => {

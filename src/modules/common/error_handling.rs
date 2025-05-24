@@ -138,14 +138,14 @@ impl ShutdownCoordinator {
         });
 
         // Wait for the completion signal with timeout
-        timeout(Duration::from_millis(timeout_ms), rx).await?;
+        let _ = timeout(Duration::from_millis(timeout_ms), rx).await?;
         Ok(())
     }
 
     /// Get a completion receiver
     fn subscribe_completion(&self) -> mpsc::Receiver<()> {
         // Create a new channel
-        let (tx, rx) = mpsc::channel(self.component_count);
+        let (_tx, rx) = mpsc::channel(self.component_count);
 
         // Forward messages from the original completion_rx to the new channel
         let completion_tx = self.completion_tx.clone();
@@ -270,7 +270,7 @@ impl ErrorHandler {
             // Create a future that completes when shutdown is received
             let shutdown_future = async {
                 match shutdown_rx.recv().await {
-                    Ok(signal) => {
+                    Ok(_signal) => {
                         debug!("Received shutdown signal during operation: {}", context);
                         Err(RouterError::Other(format!(
                             "Operation cancelled due to shutdown: {}",
