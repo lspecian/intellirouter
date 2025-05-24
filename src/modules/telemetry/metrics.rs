@@ -1,4 +1,3 @@
-use axum::Router;
 use metrics_exporter_prometheus::{Matcher, PrometheusBuilder, PrometheusHandle};
 use std::net::SocketAddr;
 use tokio::net::TcpListener;

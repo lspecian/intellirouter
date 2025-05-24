@@ -3,7 +3,6 @@
 //! This module defines the response structures used by the Memory service.
 
 use crate::modules::ipc::memory::types::{Conversation, Message, MessageSearchResult};
-use std::collections::HashMap;
 
 /// Response for get_history
 #[derive(Debug, Clone)]

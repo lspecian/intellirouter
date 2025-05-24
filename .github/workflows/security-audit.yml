@@ -1,0 +1,54 @@
+name: Security Audit
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sundays at midnight
+
+jobs:
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq gnuplot
+
+      - name: Make security scripts executable
+        run: |
+          chmod +x scripts/security/*.sh
+          ./scripts/security/make_executable.sh
+
+      - name: Run security audit
+        run: ./scripts/security/ci_security_audit.sh --severity medium --format json --output security-reports
+
+      - name: Upload security reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: security-reports/
+          retention-days: 30
+
+      - name: Check for critical vulnerabilities
+        run: |
+          if grep -q '"critical": [^0]' security-reports/ci_security_audit_*.json; then
+            echo "Critical security vulnerabilities found!"
+            exit 1
+          fi

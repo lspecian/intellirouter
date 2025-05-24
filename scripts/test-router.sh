@@ -6,6 +6,14 @@ set -e  # Exit on error
 echo "===== Testing IntelliRouter Router Role ====="
 echo
 
+# Check if test-utils is available
+if ! cargo check --features test-utils > /dev/null 2>&1; then
+  echo "⚠️ Warning: test-utils feature is not available. Using basic test mode."
+  USE_TEST_UTILS=false
+else
+  USE_TEST_UTILS=true
+fi
+
 # Start router role
 echo "Starting router role..."
 cargo run -- run --role router &
@@ -63,6 +71,17 @@ fi
 # Clean up
 echo "Stopping router..."
 kill $ROUTER_PID
+
+# Run integration tests if test-utils is available
+if [ "$USE_TEST_UTILS" = true ]; then
+  echo
+  echo "===== Running Integration Tests ====="
+  echo "Running integration tests with test-utils..."
+  cargo test --test integration_tests --features test-utils -- --nocapture || TEST_RESULT=1
+  
+  echo "Running router integration tests..."
+  cargo test --test router_integration_tests --features test-utils -- --nocapture || TEST_RESULT=1
+fi
 
 echo "Test completed."
 exit $TEST_RESULT

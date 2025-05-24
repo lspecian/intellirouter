@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IntelliRouter Test Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Dashboard Header -->
+        <header class="dashboard-header">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i>
+                <h1>IntelliRouter Test Dashboard</h1>
+            </div>
+            <div class="header-controls">
+                <div class="refresh-control">
+                    <label for="refresh-interval">Refresh:</label>
+                    <select id="refresh-interval">
+                        <option value="0">Manual</option>
+                        <option value="10">10s</option>
+                        <option value="30" selected>30s</option>
+                        <option value="60">1m</option>
+                        <option value="300">5m</option>
+                    </select>
+                </div>
+                <div class="time-range-control">
+                    <label for="time-range">Range:</label>
+                    <select id="time-range">
+                        <option value="1h">1 Hour</option>
+                        <option value="1d" selected>1 Day</option>
+                        <option value="7d">7 Days</option>
+                        <option value="30d">30 Days</option>
+                        <option value="all">All Time</option>
+                    </select>
+                </div>
+                <button id="settings-btn" class="icon-button" title="Settings">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <button id="notifications-btn" class="icon-button" title="Notifications">
+                    <i class="fas fa-bell"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Navigation -->
+        <nav class="dashboard-nav">
+            <ul>
+                <li data-view="overview" class="active">
+                    <i class="fas fa-home"></i>
+                    <span>Overview</span>
+                </li>
+                <li data-view="test-runs">
+                    <i class="fas fa-vial"></i>
+                    <span>Test Runs</span>
+                </li>
+                <li data-view="trends">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Trends</span>
+                </li>
+                <li data-view="flaky-tests">
+                    <i class="fas fa-random"></i>
+                    <span>Flaky Tests</span>
+                </li>
+                <li data-view="failures">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Failures</span>
+                </li>
+                <li data-view="ci-cd">
+                    <i class="fas fa-rocket"></i>
+                    <span>CI/CD</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Dashboard Content -->
+        <main class="dashboard-content">
+            <!-- Overview View -->
+            <div id="overview" class="dashboard-view active">
+                <div class="dashboard-header">
+                    <h2>Overview</h2>
+                    <div class="dashboard-actions">
+                        <button id="export-overview" class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Metrics Summary -->
+                <div class="metrics-summary">
+                    <div class="metric-card">
+                        <div class="metric-icon success">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>Pass Rate</h3>
+                            <div class="metric-value" id="pass-rate">0%</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-vial"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>Total Tests</h3>
+                            <div class="metric-value" id="total-tests">0</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon danger">
+                            <i class="fas fa-times"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>Failed Tests</h3>
+                            <div class="metric-value" id="failed-tests">0</div>
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon warning">
+                            <i class="fas fa-random"></i>
+                        </div>
+                        <div class="metric-content">
+                            <h3>Flaky Tests</h3>
+                            <div class="metric-value" id="flaky-tests-count">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dashboard Panels -->
+                <div class="dashboard-row">
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Pass Rate Trend</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <canvas id="pass-rate-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Test Status</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <canvas id="test-status-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Recent Test Runs</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <table class="data-table" id="recent-test-runs">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Start Time</th>
+                                        <th>Duration</th>
+                                        <th>Tests</th>
+                                        <th>Passed</th>
+                                        <th>Failed</th>
+                                        <th>Skipped</th>
+                                        <th>Pass Rate</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Test runs will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Top Flaky Tests</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <table class="data-table" id="top-flaky-tests">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Flakiness Rate</th>
+                                        <th>Total Runs</th>
+                                        <th>Passed</th>
+                                        <th>Failed</th>
+                                        <th>Last Failure</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Flaky tests will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Test Runs View -->
+            <div id="test-runs" class="dashboard-view">
+                <div class="dashboard-header">
+                    <h2>Test Runs</h2>
+                    <div class="dashboard-actions">
+                        <button id="export-test-runs" class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dashboard-panel">
+                    <div class="panel-header">
+                        <h3>All Test Runs</h3>
+                        <div class="panel-controls">
+                            <button class="icon-button" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="icon-button" title="More Options">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <table class="data-table" id="all-test-runs">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Start Time</th>
+                                    <th>End Time</th>
+                                    <th>Duration</th>
+                                    <th>Tests</th>
+                                    <th>Passed</th>
+                                    <th>Failed</th>
+                                    <th>Skipped</th>
+                                    <th>Pass Rate</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Test runs will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trends View -->
+            <div id="trends" class="dashboard-view">
+                <div class="dashboard-header">
+                    <h2>Trends</h2>
+                    <div class="dashboard-actions">
+                        <button id="export-trends" class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Pass Rate Trend</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <canvas id="trends-pass-rate-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Test Count Trend</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <canvas id="trends-test-count-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Duration Trend</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <canvas id="trends-duration-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Failure Trend</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <canvas id="trends-failure-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <div class="dashboard-panel">
+                        <div class="panel-header">
+                            <h3>Flaky Tests Trend</h3>
+                            <div class="panel-controls">
+                                <button class="icon-button" title="Refresh">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                                <button class="icon-button" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="panel-content">
+                            <canvas id="trends-flaky-tests-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flaky Tests View -->
+            <div id="flaky-tests" class="dashboard-view">
+                <div class="dashboard-header">
+                    <h2>Flaky Tests</h2>
+                    <div class="dashboard-actions">
+                        <button id="export-flaky-tests" class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dashboard-panel">
+                    <div class="panel-header">
+                        <h3>Flaky Tests</h3>
+                        <div class="panel-controls">
+                            <button class="icon-button" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="icon-button" title="More Options">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <table class="data-table" id="flaky-tests-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Suite</th>
+                                    <th>Flakiness Rate</th>
+                                    <th>Total Runs</th>
+                                    <th>Passed</th>
+                                    <th>Failed</th>
+                                    <th>Last Failure</th>
+                                    <th>Last Success</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Flaky tests will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="flaky-test-details" class="dashboard-panel" style="display: none;">
+                    <div class="panel-header">
+                        <h3>Flaky Test Details</h3>
+                        <div class="panel-controls">
+                            <button id="close-flaky-test-details" class="icon-button" title="Close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <!-- Flaky test details will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Failures View -->
+            <div id="failures" class="dashboard-view">
+                <div class="dashboard-header">
+                    <h2>Failures</h2>
+                    <div class="dashboard-actions">
+                        <button id="export-failures" class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dashboard-panel">
+                    <div class="panel-header">
+                        <h3>Failed Tests</h3>
+                        <div class="panel-controls">
+                            <button class="icon-button" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="icon-button" title="More Options">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <table class="data-table" id="failures-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Category</th>
+                                    <th>Suite</th>
+                                    <th>Run ID</th>
+                                    <th>Time</th>
+                                    <th>Duration</th>
+                                    <th>Error</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Failed tests will be added here dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CI/CD View -->
+            <div id="ci-cd" class="dashboard-view">
+                <div class="dashboard-header">
+                    <h2>CI/CD Pipeline</h2>
+                    <div class="dashboard-actions">
+                        <button id="export-ci-cd" class="btn btn-primary">
+                            <i class="fas fa-download"></i>
+                            <span>Export</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="dashboard-panel">
+                    <div class="panel-header">
+                        <h3>Pipeline Status</h3>
+                        <div class="panel-controls">
+                            <button class="icon-button" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                            <button class="icon-button" title="More Options">
+                                <i class="fas fa-ellipsis-v"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div class="ci-cd-status">
+                            <div class="ci-cd-stage">
+                                <div class="stage-icon success">
+                                    <i class="fas fa-code"></i>
+                                </div>
+                                <div class="stage-name">Build</div>
+                            </div>
+                            <div class="stage-connector"></div>
+                            <div class="ci-cd-stage">
+                                <div class="stage-icon success">
+                                    <i class="fas fa-vial"></i>
+                                </div>
+                                <div class="stage-name">Test</div>
+                            </div>
+                            <div class="stage-connector"></div>
+                            <div class="ci-cd-stage">
+                                <div class="stage-icon warning">
+                                    <i class="fas fa-shield-alt"></i>
+                                </div>
+                                <div class="stage-name">Security</div>
+                            </div>
+                            <div class="stage-connector"></div>
+                            <div class="ci-cd-stage">
+                                <div class="stage-icon info">
+                                    <i class="fas fa-box"></i>
+                                </div>
+                                <div class="stage-name">Package</div>
+                            </div>
+                            <div class="stage-connector"></div>
+                            <div class="ci-cd-stage">
+                                <div class="stage-icon">
+                                    <i class="fas fa-rocket"></i>
+                                </div>
+                                <div class="stage-name">Deploy</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Dashboard Footer -->
+        <footer class="dashboard-footer">
+            <div class="footer-info">
+                <div>IntelliRouter Test Dashboard</div>
+                <div>Version 1.0.0</div>
+            </div>
+            <div class="footer-links">
+                <a href="#">Documentation</a>
+                <a href="#">Support</a>
+                <a href="#">GitHub</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-section">
+                    <h3>Display</h3>
+                    <div class="setting-item">
+                        <label for="setting-theme">Theme</label>
+                        <select id="setting-theme">
+                            <option value="light">Light</option>
+                            <option value="dark">Dark</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="setting-date-format">Date Format</label>
+                        <select id="setting-date-format">
+                            <option value="default">Default</option>
+                            <option value="iso">ISO 8601</option>
+                            <option value="us">US (MM/DD/YYYY)</option>
+                            <option value="eu">EU (DD/MM/YYYY)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Notifications</h3>
+                    <div class="setting-item">
+                        <label for="setting-notifications">Enable Notifications</label>
+                        <input type="checkbox" id="setting-notifications" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label for="setting-notification-sound">Enable Sound</label>
+                        <input type="checkbox" id="setting-notification-sound" checked>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Data</h3>
+                    <div class="setting-item">
+                        <label for="setting-data-retention">Data Retention</label>
+                        <select id="setting-data-retention">
+                            <option value="7d">7 Days</option>
+                            <option value="30d">30 Days</option>
+                            <option value="90d">90 Days</option>
+                            <option value="365d">1 Year</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="settings-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="settings-save" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="notifications-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Notifications</h2>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="notifications-list">
+                    <!-- Notifications will be added here dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="notifications-settings" class="btn btn-secondary">Settings</button>
+                <button id="notifications-clear" class="btn btn-primary">Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="test-details-modal" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2>Test Details</h2>
+                <button class="close-btn" id="test-details-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Test details will be added here dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button id="test-details-export" class="btn btn-primary">Export</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/dashboard.js"></script>
+</body>
+
+</html>

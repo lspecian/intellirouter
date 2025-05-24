@@ -7,25 +7,53 @@ use axum::{
     extract::State,
     response::{
         sse::{Event, Sse},
-        IntoResponse,
+        IntoResponse, Response,
     },
     Json,
 };
-use futures::stream::{self, Stream};
-use futures::StreamExt as FuturesStreamExt;
+use futures::stream;
 use std::convert::Infallible;
-use std::sync::Arc;
 use std::time::Duration;
-use tokio_stream::StreamExt as TokioStreamExt;
-use tracing::{debug, error};
+use tracing::error;
 
-use super::domain::message::Message;
 use super::dto::{ApiError, ChatCompletionRequest, ChatCompletionResponse};
-use super::router_integration::create_mock_router_service;
 use super::server::AppState;
 use super::service::ChatCompletionService;
 use super::validation;
 use crate::modules::router_core::RouterError;
+
+/// Validate service health before handling requests
+async fn validate_service_health(state: &AppState) -> Result<(), ApiError> {
+    // Check if the service is shutting down
+    let shared_state = state.shared.lock().await;
+    if shared_state.shutting_down {
+        return Err(ApiError {
+            error: super::dto::ApiErrorDetail {
+                message: "Service is shutting down".to_string(),
+                r#type: "service_unavailable".to_string(),
+                param: None,
+                code: None,
+            },
+        });
+    }
+
+    // Check if the service has reached max connections
+    if shared_state.active_connections >= state.config.max_connections {
+        return Err(ApiError {
+            error: super::dto::ApiErrorDetail {
+                message: "Service is at maximum capacity".to_string(),
+                r#type: "service_unavailable".to_string(),
+                param: None,
+                code: None,
+            },
+        });
+    }
+
+    // Additional health checks could be added here
+    // For example, checking if dependent services are available
+
+    Ok(())
+}
 
 /// Route handler for /v1/chat/completions
 #[axum::debug_handler]
@@ -33,10 +61,10 @@ pub async fn chat_completions(
     State(state): State<AppState>,
     Json(request): Json<ChatCompletionRequest>,
 ) -> Result<Json<ChatCompletionResponse>, ApiError> {
-    debug!(
-        "Received chat completion request for model: {}",
-        request.model
-    );
+    // Removed debug log
+
+    // Validate service health before processing the request
+    validate_service_health(&state).await?;
 
     // Check if streaming is requested and redirect to streaming handler
     if request.stream {
@@ -49,10 +77,21 @@ pub async fn chat_completions(
     // Validate the request
     validation::validate_chat_completion_request(&request)?;
 
-    // Create service with mock router
+    // Create service with appropriate router
+    #[cfg(feature = "test-utils")]
     let service = ChatCompletionService::new_with_mock_router();
 
-    // Process the request using the service
+    #[cfg(not(feature = "test-utils"))]
+    {
+        // In a real implementation, we would create a router service here
+        // For now, use the legacy method
+        return Ok(Json(
+            ChatCompletionService::legacy_process_completion_request(&request),
+        ));
+    }
+
+    // Process the request using the service (only reached when test-utils is enabled)
+    #[cfg(feature = "test-utils")]
     match service.process_completion_request(&request).await {
         Ok(response) => Ok(Json(response)),
         Err(err) => {
@@ -67,17 +106,24 @@ pub async fn chat_completions(
 pub async fn chat_completions_stream(
     State(state): State<AppState>,
     Json(request): Json<ChatCompletionRequest>,
-) -> Result<Sse<futures::stream::BoxStream<'static, Result<Event, Infallible>>>, ApiError> {
-    debug!(
-        "Received streaming chat completion request for model: {}",
-        request.model
-    );
+) -> Result<Response, ApiError> {
+    // Removed debug log
+
+    // Validate service health before processing the request
+    validate_service_health(&state).await?;
 
     // Validate the request
     validation::validate_chat_completion_request(&request)?;
 
-    // Create service with mock router
-    let service = ChatCompletionService::new_with_mock_router();
+    // Create service with appropriate router (not used directly in this implementation)
+    #[cfg(feature = "test-utils")]
+    let _service = ChatCompletionService::new_with_mock_router();
+
+    #[cfg(not(feature = "test-utils"))]
+    let _service = {
+        // In a real implementation, we would create a router service here
+        // But for streaming, we're using the legacy method anyway
+    };
 
     // For now, use the legacy method for streaming
     // In a real implementation, we would use the router service
@@ -86,14 +132,15 @@ pub async fn chat_completions_stream(
     // Create a stream from the chunks
     let stream = futures::StreamExt::map(stream::iter(chunks.into_iter()), move |chunk| {
         let json = serde_json::to_string(&chunk).unwrap_or_default();
-        Ok(Event::default().data(json))
+        Ok::<_, Infallible>(Event::default().data(json))
     });
 
     // Apply throttling and boxing
     let stream = tokio_stream::StreamExt::throttle(stream, Duration::from_millis(300));
     let stream = futures::StreamExt::boxed(stream);
 
-    Ok(Sse::new(stream))
+    // Return the SSE stream wrapped in a Response
+    Ok(Sse::new(stream).into_response())
 }
 
 /// Convert a router error to an API error

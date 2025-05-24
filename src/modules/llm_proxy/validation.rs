@@ -258,7 +258,7 @@ pub fn create_validation_error(message: &str, param: Option<&str>) -> ApiError {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use crate::modules::llm_proxy::domain::content::{AudioData, AudioFormat, FileData, ImageUrl};

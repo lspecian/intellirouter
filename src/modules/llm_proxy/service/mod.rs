@@ -3,19 +3,22 @@
 //! This module contains the business logic for processing chat completion
 //! requests and generating responses, following clean architecture principles.
 
-use futures::stream::{self, Stream};
-use std::pin::Pin;
-use std::sync::Arc;
+use futures::stream::Stream;
 use tokio_stream::StreamExt;
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
+use crate::modules::common::error_handling::{
+    default_retryable_errors, ErrorHandler, TimeoutConfig,
+};
 use crate::modules::llm_proxy::domain::message::{Message, MessageRole};
 use crate::modules::llm_proxy::dto::{
-    ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse, ChatMessageDelta,
-    TokenUsage,
+    ChatCompletionChunk, ChatCompletionRequest, ChatCompletionResponse, TokenUsage,
 };
-use crate::modules::llm_proxy::router_integration::{create_mock_router_service, RouterService};
+#[cfg(feature = "test-utils")]
+use crate::modules::llm_proxy::router_integration::create_mock_router_service;
+use crate::modules::llm_proxy::router_integration::RouterService;
 use crate::modules::model_registry::connectors;
+use crate::modules::router_core::retry::{CircuitBreakerConfig, RetryPolicy};
 use crate::modules::router_core::RouterError;
 
 /// Service for handling chat completion requests
@@ -91,18 +94,54 @@ fn convert_from_connector_response(
 pub struct ChatCompletionService {
     /// Router service for routing requests to the appropriate model
     router_service: RouterService,
+    /// Error handler for retries, timeouts, and circuit breaking
+    error_handler: ErrorHandler,
 }
 
 impl ChatCompletionService {
     /// Create a new chat completion service
     pub fn new(router_service: RouterService) -> Self {
-        Self { router_service }
+        // Create default error handler with appropriate retry policy and circuit breaker config
+        let retry_policy = RetryPolicy::ExponentialBackoff {
+            initial_interval_ms: 100,
+            backoff_factor: 2.0,
+            max_retries: 3,
+            max_interval_ms: 5000,
+        };
+
+        let circuit_breaker_config = CircuitBreakerConfig {
+            failure_threshold: 5,
+            success_threshold: 3,
+            reset_timeout_ms: 30000, // 30 seconds
+            enabled: true,
+        };
+
+        let timeout_config = TimeoutConfig {
+            default_timeout_ms: 30000,      // 30 seconds
+            critical_timeout_ms: 10000,     // 10 seconds
+            non_critical_timeout_ms: 60000, // 60 seconds
+        };
+
+        let error_handler = ErrorHandler::new(
+            retry_policy,
+            circuit_breaker_config,
+            default_retryable_errors(),
+            timeout_config,
+        );
+
+        Self {
+            router_service,
+            error_handler,
+        }
     }
 
     /// Create a new chat completion service with a mock router
+    ///
+    /// This function is only available when the `test-utils` feature is enabled.
+    #[cfg(feature = "test-utils")]
     pub fn new_with_mock_router() -> Self {
         let router_service = create_mock_router_service();
-        Self { router_service }
+        Self::new(router_service)
     }
 
     /// Process a chat completion request and generate a response
@@ -118,10 +157,20 @@ impl ChatCompletionService {
         // Convert the DTO request to a connector request
         let connector_request = convert_to_connector_request(request);
 
-        // Route the request to the appropriate model
+        // Use error handler to execute with retry, timeout, and circuit breaking
+        let context = format!("chat_completion_request:{}", request.model);
+        let timeout_ms = request.max_tokens.map(|t| t as u64 * 100).unwrap_or(30000);
+
         let connector_response = self
-            .router_service
-            .route_request(&connector_request)
+            .error_handler
+            .execute_with_retry_and_timeout(
+                || {
+                    let req = connector_request.clone();
+                    async move { self.router_service.route_request(&req).await }
+                },
+                &context,
+                Some(timeout_ms),
+            )
             .await?;
 
         // Convert the connector response to a DTO response
@@ -190,15 +239,26 @@ impl ChatCompletionService {
                 additional_params: None,
             };
 
-        // Route the streaming request
+        // Use error handler to execute with timeout
+        let context = format!("streaming_request:{}", request.model);
+        let timeout_ms = request.max_tokens.map(|t| t as u64 * 100).unwrap_or(60000);
+
         let stream = self
-            .router_service
-            .route_streaming_request(&connector_request)
+            .error_handler
+            .execute_with_timeout(
+                || async {
+                    self.router_service
+                        .route_streaming_request(&connector_request)
+                        .await
+                },
+                &context,
+                Some(timeout_ms),
+            )
             .await?;
 
         // Convert the stream of strings to a stream of chunks
         let chunk_stream = stream.map(|result| {
-            result.map(|chunk_str| {
+            result.map(|chunk_str: String| {
                 // Parse the chunk string into a ChatCompletionChunk
                 serde_json::from_str::<ChatCompletionChunk>(&chunk_str).unwrap_or_else(|e| {
                     error!("Failed to parse chunk: {}", e);
@@ -373,7 +433,7 @@ impl ChatCompletionService {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
 

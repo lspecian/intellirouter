@@ -31,11 +31,35 @@ jobs:
         with:
           command: build
           args: --verbose
-      - name: Run tests
+      - name: Run unit tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --verbose
+          args: --lib --verbose
+          
+      - name: Run integration tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --test integration_tests --verbose
+          
+      - name: Run e2e tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --test e2e_tests --verbose
+          
+      - name: Run property tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --test property_tests --verbose
+          
+      - name: Run custom test runner
+        uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: --bin run_tests --features test-utils -- test integration
 
   coverage:
     name: Coverage

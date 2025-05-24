@@ -238,6 +238,76 @@ impl PersonaManager {
 
         Ok(())
     }
+
+    /// List all guardrails across all personas
+    ///
+    /// # Returns
+    ///
+    /// A vector of guardrails with their associated persona
+    pub fn list_guardrails(&self) -> Vec<(String, String, &Guardrail)> {
+        let mut guardrails = Vec::new();
+
+        for persona in self.personas.values() {
+            for guardrail in &persona.guardrails {
+                guardrails.push((persona.id.clone(), persona.name.clone(), guardrail));
+            }
+        }
+
+        guardrails
+    }
+
+    /// Get usage statistics for personas
+    ///
+    /// # Returns
+    ///
+    /// A map of usage statistics
+    pub fn get_usage_stats(&self) -> HashMap<String, u64> {
+        let mut stats = HashMap::new();
+
+        // In a real implementation, these would be tracked during apply_persona calls
+        stats.insert("total_requests".to_string(), 0);
+        stats.insert("guardrail_blocks".to_string(), 0);
+        stats.insert("average_response_time_ms".to_string(), 0);
+
+        stats
+    }
+
+    /// Get recent persona usage
+    ///
+    /// # Returns
+    ///
+    /// A vector of recent persona usage events
+    pub fn get_recent_persona_usage(&self) -> Vec<HashMap<String, serde_json::Value>> {
+        // In a real implementation, this would maintain a circular buffer of recent usage
+        Vec::new()
+    }
+
+    /// Get recent guardrail blocks
+    ///
+    /// # Returns
+    ///
+    /// A vector of recent guardrail block events
+    pub fn get_recent_guardrail_blocks(&self) -> Vec<HashMap<String, serde_json::Value>> {
+        // In a real implementation, this would maintain a circular buffer of recent blocks
+        Vec::new()
+    }
+
+    /// Get performance metrics
+    ///
+    /// # Returns
+    ///
+    /// A map of performance metrics
+    pub fn get_performance_metrics(&self) -> HashMap<String, f64> {
+        let mut metrics = HashMap::new();
+
+        // In a real implementation, these would be tracked during apply_persona calls
+        metrics.insert("average_prompt_tokens".to_string(), 0.0);
+        metrics.insert("average_completion_tokens".to_string(), 0.0);
+        metrics.insert("average_guardrail_check_time_ms".to_string(), 0.0);
+        metrics.insert("average_persona_application_time_ms".to_string(), 0.0);
+
+        metrics
+    }
 }
 
 /// Thread-safe persona manager

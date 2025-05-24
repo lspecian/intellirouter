@@ -8,8 +8,13 @@ pub mod cli;
 pub mod config;
 pub mod modules;
 
-// Make test_utils available for both unit tests and integration tests
+// Make test_utils available when the test-utils feature is enabled
+#[cfg(feature = "test-utils")]
 pub mod test_utils;
+
+// Test templates are only available during tests
+#[cfg(test)]
+pub mod test_templates;
 
 // Re-exports of commonly used items
 pub use cli::{Cli, Commands, Role};

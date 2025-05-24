@@ -7,7 +7,7 @@ use std::sync::{Arc, RwLock};
 use tokio::sync::Mutex;
 
 use crate::modules::chain_engine::condition_evaluator::ConditionEvaluator;
-use crate::modules::chain_engine::context::{ChainContext, StepResult};
+use crate::modules::chain_engine::context::ChainContext;
 use crate::modules::chain_engine::definition::{
     Chain, ChainStep, Condition, DependencyType, StepType,
 };
@@ -61,6 +61,71 @@ impl ChainEngine {
     /// Get execution statistics
     pub fn get_execution_stats(&self) -> ExecutionStats {
         self.stats.read().unwrap().clone()
+    }
+
+    /// Get executor statistics
+    ///
+    /// # Returns
+    ///
+    /// A vector of executor statistics
+    pub fn get_executor_stats(&self) -> Vec<HashMap<String, serde_json::Value>> {
+        let executors = self.executors.read().unwrap();
+
+        executors
+            .iter()
+            .map(|(step_type, _executor)| {
+                let mut stats = HashMap::new();
+                stats.insert("step_type".to_string(), serde_json::json!(step_type));
+                stats.insert("executions".to_string(), serde_json::json!(0));
+                stats.insert("successful_executions".to_string(), serde_json::json!(0));
+                stats.insert("failed_executions".to_string(), serde_json::json!(0));
+                stats.insert(
+                    "average_execution_time_ms".to_string(),
+                    serde_json::json!(0.0),
+                );
+                stats
+            })
+            .collect()
+    }
+
+    /// Get recent executions
+    ///
+    /// # Returns
+    ///
+    /// A vector of recent execution details
+    pub fn get_recent_executions(&self) -> Vec<HashMap<String, serde_json::Value>> {
+        // In a real implementation, this would maintain a circular buffer of recent executions
+        Vec::new()
+    }
+
+    /// List chain definitions
+    ///
+    /// # Returns
+    ///
+    /// A vector of chain definitions
+    pub fn list_chain_definitions(&self) -> Vec<HashMap<String, serde_json::Value>> {
+        // In a real implementation, this would return registered chain definitions
+        Vec::new()
+    }
+
+    /// Get context cache size
+    ///
+    /// # Returns
+    ///
+    /// The size of the context cache
+    pub fn get_context_cache_size(&self) -> usize {
+        // In a real implementation, this would return the actual cache size
+        0
+    }
+
+    /// Get result cache size
+    ///
+    /// # Returns
+    ///
+    /// The size of the result cache
+    pub fn get_result_cache_size(&self) -> usize {
+        // In a real implementation, this would return the actual cache size
+        0
     }
 
     /// Register a step executor for a specific step type
@@ -431,9 +496,9 @@ impl ChainEngine {
     pub async fn execute_conditional_step(
         &self,
         step: &ChainStep,
-        branches: &[crate::modules::chain_engine::definition::ConditionalBranch],
-        default_branch: Option<String>,
-        chain: &Chain,
+        _branches: &[crate::modules::chain_engine::definition::ConditionalBranch],
+        _default_branch: Option<String>,
+        _chain: &Chain,
         context: Arc<Mutex<ChainContext>>,
     ) -> ChainResult<()> {
         let executor = ConditionalExecutor::new();
@@ -452,9 +517,9 @@ impl ChainEngine {
     pub async fn execute_parallel_step(
         &self,
         step: &ChainStep,
-        steps: &[String],
-        wait_for_all: bool,
-        chain: &Chain,
+        _steps: &[String],
+        _wait_for_all: bool,
+        _chain: &Chain,
         context: Arc<Mutex<ChainContext>>,
     ) -> ChainResult<()> {
         let executor = ParallelExecutor::new();
@@ -473,11 +538,11 @@ impl ChainEngine {
     pub async fn execute_loop_step(
         &self,
         step: &ChainStep,
-        iteration_variable: &str,
-        max_iterations: Option<u32>,
-        steps: &[String],
-        break_condition: Option<&Condition>,
-        chain: &Chain,
+        _iteration_variable: &str,
+        _max_iterations: Option<u32>,
+        _steps: &[String],
+        _break_condition: Option<&Condition>,
+        _chain: &Chain,
         context: Arc<Mutex<ChainContext>>,
     ) -> ChainResult<()> {
         let executor = LoopExecutor::new();
@@ -496,8 +561,8 @@ impl ChainEngine {
     pub async fn execute_custom_step(
         &self,
         step: &ChainStep,
-        handler: &str,
-        config: &HashMap<String, serde_json::Value>,
+        _handler: &str,
+        _config: &HashMap<String, serde_json::Value>,
         context: Arc<Mutex<ChainContext>>,
     ) -> ChainResult<()> {
         let executor = CustomExecutor::new();

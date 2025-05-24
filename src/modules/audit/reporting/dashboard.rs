@@ -6,11 +6,10 @@ use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use axum::serve::Serve;
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Path, State},
     http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    response::{Html, IntoResponse},
     routing::{get, post},
     Json, Router,
 };
@@ -19,7 +18,7 @@ use tower_http::services::ServeDir;
 // Removed incorrect hyper Server import - will be replaced with correct import if needed
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info};
 
 use super::exporters::ExportFormat;
 use super::topology::{SystemTopology, TopologyEdge, TopologyNode};

@@ -374,10 +374,10 @@ pub use ollama::{OllamaConnector, OllamaConnectorFactory};
 pub mod openai;
 pub use openai::{OpenAIConnector, OpenAIConnectorFactory};
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests;
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod unit_tests {
     use super::*;
 

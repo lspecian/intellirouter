@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde_json::json;
-use tracing::{debug, error, info};
 
 use crate::modules::health::{DiagnosticsProvider, HealthCheckManager};
 use crate::modules::model_registry::storage::ModelRegistry;

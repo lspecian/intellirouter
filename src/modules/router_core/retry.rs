@@ -12,15 +12,14 @@ use std::time::{Duration, Instant};
 
 use futures::Future;
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, warn};
+use tracing::debug;
 
 use crate::modules::model_registry::{
     connectors::{
-        ChatCompletionChoice, ChatCompletionRequest, ChatCompletionResponse, ChatMessage,
+        ChatCompletionChoice, ChatCompletionResponse, ChatMessage,
         MessageRole,
     },
     storage::ModelRegistry,
-    ModelMetadata,
 };
 
 use super::{RouterError, RoutingMetadata, RoutingRequest, RoutingResponse};
@@ -474,6 +473,24 @@ impl RetryManager {
     /// Get the circuit breaker state
     pub fn get_circuit_breaker_state(&self) -> CircuitBreakerState {
         self.circuit_breaker.get_state()
+    }
+
+    /// Check if a request is allowed by the circuit breaker
+    pub fn allow_request(&self, context: &str) -> bool {
+        debug!("Checking if request is allowed for context: {}", context);
+
+        match self.policy {
+            RetryPolicy::None => true,
+            _ => self.circuit_breaker.allow_request(),
+        }
+    }
+
+    /// Check if the circuit breaker is open
+    pub fn is_circuit_open(&self) -> bool {
+        match self.circuit_breaker.get_state() {
+            CircuitBreakerState::Open => true,
+            _ => false,
+        }
     }
 }
 

@@ -6,10 +6,8 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
-use std::sync::Arc;
 
-use crate::modules::ipc::rag_manager::{Document, ScoredDocument};
-use crate::modules::ipc::{IpcError, IpcResult};
+use crate::modules::ipc::IpcResult;
 
 /// Represents a persona configuration
 #[derive(Debug, Clone)]

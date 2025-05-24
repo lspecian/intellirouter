@@ -12,7 +12,7 @@ use crate::modules::ipc::memory::responses::{
     StoreChainResultInConversationResponse,
 };
 use crate::modules::ipc::memory::types::{Conversation, Message, StepResult};
-use crate::modules::ipc::{IpcError, IpcResult};
+use crate::modules::ipc::IpcResult;
 
 /// Server interface for the Memory service
 #[async_trait]

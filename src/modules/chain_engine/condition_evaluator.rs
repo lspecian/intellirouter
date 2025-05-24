@@ -3,7 +3,6 @@
 //! This module provides functionality for evaluating conditions in chains.
 
 use regex::Regex;
-use std::collections::HashMap;
 
 use crate::modules::chain_engine::context::ChainContext;
 use crate::modules::chain_engine::definition::{ComparisonOperator, Condition};

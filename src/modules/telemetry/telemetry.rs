@@ -1,6 +1,6 @@
 use metrics::{counter, gauge, histogram};
 use std::time::Instant;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info};
 
 /// Metrics for an LLM API call
 #[derive(Debug, Clone)]

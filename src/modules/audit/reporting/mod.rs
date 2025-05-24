@@ -19,10 +19,10 @@ pub use visualization::{
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::info;
 
 use super::report::AuditReport;
-use super::types::{AuditError, ServiceStatus, ServiceType};
+use super::types::{AuditError, ServiceType};
 
 /// Report Generator
 ///
@@ -76,13 +76,13 @@ impl ReportGenerator {
         let topology = self.generate_system_topology(&report).await?;
 
         // Generate test results visualization
-        let test_results = self.test_result_visualizer.visualize(&report).await?;
+        let _test_results = self.test_result_visualizer.visualize(&report).await?;
 
         // Generate performance metrics visualization
-        let performance_metrics = self.performance_visualizer.visualize(&report).await?;
+        let _performance_metrics = self.performance_visualizer.visualize(&report).await?;
 
         // Generate error visualization
-        let error_details = self.error_visualizer.visualize(&report).await?;
+        let _error_details = self.error_visualizer.visualize(&report).await?;
 
         info!("Report generation completed");
 

@@ -6,18 +6,15 @@
 use super::{
     ChatCompletionChoice, ChatCompletionChunk, ChatCompletionChunkChoice, ChatCompletionDelta,
     ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ConnectorConfig, ConnectorError,
-    FunctionCall, FunctionCallDelta, FunctionDefinition, MessageRole, ModelConnector,
-    ModelConnectorFactory, StreamingResponse, TokenUsage, ToolCall, ToolCallDelta, ToolDefinition,
+    FunctionCall, FunctionCallDelta, MessageRole, ModelConnector, ModelConnectorFactory,
+    StreamingResponse, TokenUsage, ToolCall, ToolCallDelta,
 };
 use async_trait::async_trait;
-use futures::{stream, Stream, StreamExt};
+use futures::{stream, StreamExt};
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
-use uuid::Uuid;
 
 /// OpenAI connector for interacting with OpenAI API
 pub struct OpenAIConnector {
@@ -758,7 +755,7 @@ impl ModelConnectorFactory for OpenAIConnectorFactory {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use crate::modules::model_registry::connectors::{ChatMessage, MessageRole};

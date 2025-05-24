@@ -1,0 +1,133 @@
+name: Automated Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  code-review:
+    name: Automated Code Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for proper diff analysis
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      
+      - name: Install cargo-tarpaulin
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-tarpaulin
+          version: latest
+          use-tool-cache: true
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/code_review.sh
+      
+      - name: Run code review
+        id: code_review
+        run: ./scripts/code_review.sh --pr=${{ github.event.pull_request.number }} --output=code_review_report.json
+      
+      - name: Post review comments
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            // Read the code review report
+            let reviewData = {};
+            try {
+              const reportContent = fs.readFileSync('code_review_report.json', 'utf8');
+              reviewData = JSON.parse(reportContent);
+            } catch (error) {
+              console.log('Error reading review report:', error);
+              return;
+            }
+            
+            // Post summary comment
+            const summaryComment = `# Automated Code Review Results
+
+            ## Summary
+            - **Total Issues:** ${reviewData.total_issues || 0}
+            - **Compilation Issues:** ${reviewData.compilation_issues?.length || 0}
+            - **Code Style Issues:** ${reviewData.style_issues?.length || 0}
+            - **Performance Issues:** ${reviewData.performance_issues?.length || 0}
+            - **Documentation Issues:** ${reviewData.documentation_issues?.length || 0}
+            - **Test Coverage:** ${reviewData.test_coverage || 'N/A'}%
+
+            ${reviewData.summary || ''}
+
+            [View detailed report](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: summaryComment
+            });
+            
+            // Post inline comments for specific issues
+            if (reviewData.file_comments && reviewData.file_comments.length > 0) {
+              for (const comment of reviewData.file_comments) {
+                if (comment.path && comment.line && comment.body) {
+                  try {
+                    await github.rest.pulls.createReviewComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      pull_number: context.issue.number,
+                      commit_id: context.payload.pull_request.head.sha,
+                      path: comment.path,
+                      line: comment.line,
+                      body: comment.body
+                    });
+                  } catch (error) {
+                    console.log(`Error posting comment for ${comment.path}:${comment.line}:`, error);
+                  }
+                }
+              }
+            }
+            
+            // Create a review with a summary
+            const reviewResult = reviewData.total_issues > 0 ? 'REQUEST_CHANGES' : 'APPROVE';
+            const reviewBody = reviewData.total_issues > 0 
+              ? `The automated code review found ${reviewData.total_issues} issues that should be addressed.`
+              : 'The automated code review found no issues. Great job!';
+            
+            try {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+                commit_id: context.payload.pull_request.head.sha,
+                event: reviewResult,
+                body: reviewBody
+              });
+            } catch (error) {
+              console.log('Error creating review:', error);
+            }

@@ -9,7 +9,7 @@ use std::path::Path;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, warn};
+use tracing::info;
 
 use super::types::{
     AuditError, CommunicationTestResult, MetricDataPoint, MetricType, ServiceStatus, ServiceType,
@@ -145,6 +145,14 @@ impl AuditReport {
         });
     }
 
+    /// Add a section to the report
+    pub fn add_section(&mut self, name: impl Into<String>, value: serde_json::Value) {
+        // For now, we'll just add a success message with the section name and value
+        // In a real implementation, this would add a section to the report
+        let message = format!("Section {}: {}", name.into(), value);
+        self.add_success(message);
+    }
+
     /// Get all metrics
     pub fn get_metrics(&self) -> &[MetricDataPoint] {
         &self.metrics
@@ -254,6 +262,9 @@ impl AuditReport {
                 ServiceStatus::Starting => "🔄 Starting",
                 ServiceStatus::ShuttingDown => "🔄 Shutting Down",
                 ServiceStatus::Stopped => "⏹️ Stopped",
+                ServiceStatus::Active => "✅ Active",
+                ServiceStatus::Inactive => "⏹️ Inactive",
+                ServiceStatus::Degraded => "⚠️ Degraded",
             };
 
             markdown.push_str(&format!("| {} | {} |\n", service, status_icon));
@@ -434,6 +445,9 @@ impl AuditReport {
                 ServiceStatus::Starting => ("", "🔄 Starting"),
                 ServiceStatus::ShuttingDown => ("", "🔄 Shutting Down"),
                 ServiceStatus::Stopped => ("", "⏹️ Stopped"),
+                ServiceStatus::Active => ("success", "✅ Active"),
+                ServiceStatus::Inactive => ("", "⏹️ Inactive"),
+                ServiceStatus::Degraded => ("warning", "⚠️ Degraded"),
             };
 
             html.push_str(&format!(

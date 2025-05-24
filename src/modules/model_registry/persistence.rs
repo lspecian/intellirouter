@@ -7,10 +7,9 @@
 
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, info};
 
 use super::storage::ModelRegistry;
 use super::types::{ModelMetadata, RegistryError};
@@ -332,7 +331,7 @@ pub fn create_file_persistent_registry(
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use crate::modules::model_registry::types::{ModelMetadata, ModelStatus};

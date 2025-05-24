@@ -1,19 +1,38 @@
 //! Communication Tests
 //!
 //! This module is responsible for testing communication between services.
+//!
+//! Note: Most of the functionality has been moved to the intellirouter-test-utils crate.
+//! This module now only contains functionality that must remain in the main codebase,
+//! wrapped in feature flags.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+#[cfg(feature = "test-utils")]
+pub mod internal {
+    use std::collections::HashMap;
+    use std::sync::Arc;
+    use std::time::{Duration, Instant};
 
-use reqwest::Client;
-use serde_json::Value;
-use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+    use reqwest::Client;
+    use serde_json::Value;
+    use tokio::sync::RwLock;
+    use tracing::{error, info, warn};
 
-use super::report::AuditReport;
-use super::types::{AuditError, CommunicationTestResult, ServiceType};
+    use crate::modules::audit::report::AuditReport;
+    use crate::modules::audit::types::{
+        AuditError, CommunicationTestResult, ServiceInfo, ServiceType,
+    };
 
+    // Re-export the test utilities from intellirouter-test-utils
+    pub use intellirouter_test_utils::fixtures::audit::*;
+    pub use intellirouter_test_utils::helpers::communication::*;
+}
+
+// Re-export the test utilities for backward compatibility
+#[cfg(feature = "test-utils")]
+pub use internal::*;
+
+// All communication test functions are only available with the test-utils feature
+#[cfg(feature = "test-utils")]
 /// Test gRPC communication between services
 pub async fn test_grpc_communication(
     client: &Client,
@@ -101,6 +120,7 @@ pub async fn test_grpc_communication(
     Ok(results)
 }
 
+#[cfg(feature = "test-utils")]
 /// Test Redis pub/sub communication
 pub async fn test_redis_pubsub(
     report: &Arc<RwLock<AuditReport>>,
@@ -197,6 +217,7 @@ pub async fn test_redis_pubsub(
     Ok(results)
 }
 
+#[cfg(feature = "test-utils")]
 /// Test bidirectional communication between services
 pub async fn test_bidirectional_communication(
     client: &Client,
@@ -350,6 +371,7 @@ pub async fn test_bidirectional_communication(
     Ok(results)
 }
 
+#[cfg(feature = "test-utils")]
 /// Get the URL for a service
 fn get_service_url(service: ServiceType) -> String {
     match service {
@@ -359,9 +381,13 @@ fn get_service_url(service: ServiceType) -> String {
         ServiceType::PersonaLayer => "http://summarizer:8080".to_string(),
         ServiceType::Redis => "redis://redis:6379".to_string(),
         ServiceType::ChromaDb => "http://chromadb:8000".to_string(),
+        ServiceType::ModelRegistry => "http://model-registry:8080".to_string(),
+        ServiceType::Memory => "http://memory:8080".to_string(),
+        ServiceType::Orchestrator => "http://orchestrator-service:8080".to_string(),
     }
 }
 
+#[cfg(feature = "test-utils")]
 /// Test if a service can reach another service
 async fn test_service_connection(
     client: &Client,
@@ -398,6 +424,47 @@ async fn test_service_connection(
             if let Some(name) = connection.get("name").and_then(|n| n.as_str()) {
                 if target_url.contains(name) {
                     if let Some(status) = connection.get("status").and_then(|s| s.as_str()) {
+                        #[cfg(feature = "test-utils")]
+                        /// Run all communication tests
+                        pub async fn run_communication_tests(
+                            services: &HashMap<ServiceType, ServiceInfo>,
+                        ) -> Result<Vec<CommunicationTestResult>, AuditError>
+                        {
+                            info!("Running all communication tests");
+
+                            let mut results = Vec::new();
+
+                            // Create a client for HTTP requests
+                            let client = Client::builder()
+                                .timeout(Duration::from_secs(5))
+                                .build()
+                                .map_err(|e| {
+                                    AuditError::CommunicationTestError(format!(
+                                        "Failed to create HTTP client: {}",
+                                        e
+                                    ))
+                                })?;
+
+                            // Create a report placeholder
+                            let report = Arc::new(RwLock::new(AuditReport::new()));
+
+                            // Run gRPC communication tests
+                            let grpc_results = test_grpc_communication(&client, &report).await?;
+                            results.extend(grpc_results);
+
+                            // Run Redis pub/sub tests
+                            let redis_results = test_redis_pubsub(&report).await?;
+                            results.extend(redis_results);
+
+                            // Run bidirectional communication tests
+                            let bidirectional_results =
+                                test_bidirectional_communication(&client, &report).await?;
+                            results.extend(bidirectional_results);
+
+                            info!("All communication tests completed");
+
+                            Ok(results)
+                        }
                         return Ok(status == "healthy" || status == "degraded");
                     }
                 }
@@ -417,6 +484,7 @@ async fn test_service_connection(
     Ok(false)
 }
 
+#[cfg(feature = "test-utils")]
 /// Test if a service can connect to Redis
 async fn test_redis_connection(redis_url: &str) -> Result<bool, AuditError> {
     let client = redis::Client::open(redis_url).map_err(|e| {

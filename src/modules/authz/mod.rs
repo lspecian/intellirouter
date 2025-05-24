@@ -20,7 +20,7 @@ pub fn create_rbac_manager() -> Arc<RbacManager> {
     Arc::new(RbacManager::new())
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use chrono::Utc;

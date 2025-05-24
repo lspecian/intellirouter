@@ -15,6 +15,8 @@ pub enum RegistryError {
     CommunicationError(String),
     /// Storage-related error
     StorageError(String),
+    /// Registry not initialized
+    NotInitialized(String),
     /// Other errors
     Other(String),
 }
@@ -27,6 +29,7 @@ impl fmt::Display for RegistryError {
             RegistryError::InvalidMetadata(msg) => write!(f, "Invalid model metadata: {}", msg),
             RegistryError::CommunicationError(msg) => write!(f, "Communication error: {}", msg),
             RegistryError::StorageError(msg) => write!(f, "Storage error: {}", msg),
+            RegistryError::NotInitialized(msg) => write!(f, "Registry not initialized: {}", msg),
             RegistryError::Other(msg) => write!(f, "Error: {}", msg),
         }
     }

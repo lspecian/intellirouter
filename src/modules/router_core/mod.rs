@@ -6,8 +6,7 @@
 //! The module provides a flexible and extensible framework for implementing
 //! different routing strategies.
 
-#[cfg(test)]
-mod unit_tests;
+// Tests moved to tests/unit/modules/router_core/
 
 pub mod config;
 pub mod context;

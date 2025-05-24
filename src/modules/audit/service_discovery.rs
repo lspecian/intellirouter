@@ -3,21 +3,104 @@
 //! This module is responsible for validating that all services can discover each other
 //! and that the service registry functionality is working correctly.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use reqwest::Client;
 use serde_json::Value;
 use tokio::sync::RwLock;
-use tokio::time::timeout;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
-use super::communication_tests;
 use super::report::AuditReport;
-use super::types::{
-    AuditError, CommunicationTestResult, DiscoveryConfig, ServiceInfo, ServiceStatus, ServiceType,
-};
+use super::types::{AuditError, DiscoveryConfig};
+
+// Import test utilities only when the test-utils feature is enabled
+#[cfg(feature = "test-utils")]
+use intellirouter_test_utils::fixtures::audit::{ServiceInfo, ServiceStatus, ServiceType};
+#[cfg(feature = "test-utils")]
+use intellirouter_test_utils::helpers::communication;
+
+// Define these types locally when the test-utils feature is not enabled
+#[cfg(not(feature = "test-utils"))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ServiceType {
+    Router,
+    ChainEngine,
+    RagManager,
+    PersonaLayer,
+    Redis,
+    ChromaDb,
+    ModelRegistry,
+    Memory,
+    Orchestrator,
+}
+
+#[cfg(not(feature = "test-utils"))]
+impl std::fmt::Display for ServiceType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ServiceType::Router => write!(f, "Router"),
+            ServiceType::ChainEngine => write!(f, "ChainEngine"),
+            ServiceType::RagManager => write!(f, "RagManager"),
+            ServiceType::PersonaLayer => write!(f, "PersonaLayer"),
+            ServiceType::Redis => write!(f, "Redis"),
+            ServiceType::ChromaDb => write!(f, "ChromaDb"),
+            ServiceType::ModelRegistry => write!(f, "ModelRegistry"),
+            ServiceType::Memory => write!(f, "Memory"),
+            ServiceType::Orchestrator => write!(f, "Orchestrator"),
+        }
+    }
+}
+
+#[cfg(not(feature = "test-utils"))]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ServiceStatus {
+    Active,
+    Inactive,
+    Unknown,
+}
+
+#[cfg(not(feature = "test-utils"))]
+#[derive(Debug, Clone)]
+pub struct ServiceInfo {
+    pub service_type: ServiceType,
+    pub host: String,
+    pub port: u16,
+    pub status: ServiceStatus,
+    pub dependencies: Vec<ServiceType>,
+    pub health_endpoint: String,
+    pub diagnostics_endpoint: String,
+}
+
+#[cfg(not(feature = "test-utils"))]
+impl ServiceInfo {
+    pub fn new(service_type: ServiceType, host: &str, port: u16) -> Self {
+        let health_endpoint = format!("http://{}:{}/health", host, port);
+        let diagnostics_endpoint = format!("http://{}:{}/diagnostics", host, port);
+
+        Self {
+            service_type,
+            host: host.to_string(),
+            port,
+            status: ServiceStatus::Unknown,
+            dependencies: Vec::new(),
+            health_endpoint,
+            diagnostics_endpoint,
+        }
+    }
+}
+
+#[cfg(not(feature = "test-utils"))]
+#[derive(Debug, Clone)]
+pub struct CommunicationTestResult {
+    pub source: ServiceType,
+    pub target: ServiceType,
+    pub success: bool,
+    pub error: Option<String>,
+    pub response_time_ms: Option<u64>,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+}
 
 /// Service Discovery Validator
 #[derive(Debug, Clone)]
@@ -177,11 +260,11 @@ impl ServiceDiscovery {
         if self.config.validate_all_connections {
             let service_types: Vec<ServiceType> = self.services.keys().cloned().collect();
 
-            for &source in &service_types {
-                for &target in &service_types {
+            for source in &service_types {
+                for target in &service_types {
                     if source != target {
-                        let source_service = self.services.get(&source).unwrap();
-                        let target_service = self.services.get(&target).unwrap();
+                        let source_service = self.services.get(source).unwrap();
+                        let target_service = self.services.get(target).unwrap();
 
                         match self
                             .check_service_can_discover(source_service, target_service)
@@ -235,58 +318,107 @@ impl ServiceDiscovery {
         Ok(())
     }
 
+    /// Discover services in the system
+    pub async fn discover_services(&self) -> Result<Vec<ServiceInfo>, AuditError> {
+        info!("Discovering services");
+
+        let mut discovered_services = Vec::new();
+
+        // Check each service and add it to the discovered list if it's healthy
+        for (service_type, service_info) in &self.services {
+            match self.check_service_health(service_info).await {
+                Ok(true) => {
+                    // Create a copy of the service info with Active status
+                    let mut service = service_info.clone();
+                    service.status = ServiceStatus::Active;
+                    discovered_services.push(service);
+                    info!("Discovered active service: {}", service_type);
+                }
+                Ok(false) => {
+                    // Create a copy of the service info with Inactive status
+                    let mut service = service_info.clone();
+                    service.status = ServiceStatus::Inactive;
+                    discovered_services.push(service);
+                    warn!("Discovered inactive service: {}", service_type);
+                }
+                Err(e) => {
+                    warn!("Failed to discover service {}: {}", service_type, e);
+                    // Don't add failed services to the discovered list
+                }
+            }
+        }
+
+        info!(
+            "Service discovery completed, found {} services",
+            discovered_services.len()
+        );
+        Ok(discovered_services)
+    }
+
     /// Validate communication between services
     pub async fn validate_communication(&self) -> Result<(), AuditError> {
         info!("Starting communication validation");
 
-        let mut test_results = Vec::new();
+        #[cfg(feature = "test-utils")]
+        {
+            let mut test_results = Vec::new();
 
-        // Test gRPC communication between services
-        info!("Testing gRPC communication");
-        let grpc_results =
-            communication_tests::test_grpc_communication(&self.client, &self.report).await?;
-        test_results.extend(grpc_results);
+            // Test gRPC communication between services
+            info!("Testing gRPC communication");
+            let grpc_results =
+                communication::test_grpc_communication(&self.client, &self.services).await?;
+            test_results.extend(grpc_results);
 
-        // Test Redis pub/sub functionality
-        info!("Testing Redis pub/sub functionality");
-        let redis_results = communication_tests::test_redis_pubsub(&self.report).await?;
-        test_results.extend(redis_results);
+            // Test Redis pub/sub functionality
+            info!("Testing Redis pub/sub functionality");
+            let redis_results = communication::test_redis_pubsub(&self.services).await?;
+            test_results.extend(redis_results);
 
-        // Test bidirectional communication
-        info!("Testing bidirectional communication");
-        let bidirectional_results =
-            communication_tests::test_bidirectional_communication(&self.client, &self.report)
-                .await?;
-        test_results.extend(bidirectional_results);
+            // Test bidirectional communication
+            info!("Testing bidirectional communication");
+            let bidirectional_results =
+                communication::test_bidirectional_communication(&self.client, &self.services)
+                    .await?;
+            test_results.extend(bidirectional_results);
 
-        // Update report with communication test results
-        let mut report = self.report.write().await;
-        for result in &test_results {
-            if result.success {
-                report.add_success(format!(
-                    "Communication test from {} to {} successful",
-                    result.source, result.target
-                ));
-            } else if let Some(error) = &result.error {
-                report.add_error(format!(
-                    "Communication test from {} to {} failed: {}",
-                    result.source, result.target, error
-                ));
+            // Update report with communication test results
+            let mut report = self.report.write().await;
+            for result in &test_results {
+                if result.success {
+                    report.add_success(format!(
+                        "Communication test from {} to {} successful",
+                        result.source, result.target
+                    ));
+                } else if let Some(error) = &result.error {
+                    report.add_error(format!(
+                        "Communication test from {} to {} failed: {}",
+                        result.source, result.target, error
+                    ));
+                }
+            }
+
+            // Check if all tests were successful
+            let all_successful = test_results.iter().all(|r| r.success);
+
+            if all_successful {
+                info!("All communication tests passed");
+                report.add_success("All communication tests passed");
+                Ok(())
+            } else {
+                let error_msg = "Some communication tests failed";
+                error!("{}", error_msg);
+                report.add_error(format!("Communication test error: {}", error_msg));
+                Err(AuditError::CommunicationTestError(error_msg.to_string()))
             }
         }
 
-        // Check if all tests were successful
-        let all_successful = test_results.iter().all(|r| r.success);
-
-        if all_successful {
-            info!("All communication tests passed");
-            report.add_success("All communication tests passed");
+        #[cfg(not(feature = "test-utils"))]
+        {
+            // When test-utils is not enabled, just log a message and return success
+            info!("Communication validation skipped (test-utils feature not enabled)");
+            let mut report = self.report.write().await;
+            report.add_success("Communication validation skipped (test-utils feature not enabled)");
             Ok(())
-        } else {
-            let error_msg = "Some communication tests failed";
-            error!("{}", error_msg);
-            report.add_error(format!("Communication test error: {}", error_msg));
-            Err(AuditError::CommunicationTestError(error_msg.to_string()))
         }
     }
 

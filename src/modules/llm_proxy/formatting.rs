@@ -7,10 +7,10 @@ use chrono::Utc;
 use uuid::Uuid;
 
 use super::domain::content::MessageContent;
-use super::domain::message::{Message, MessageRole};
+use super::domain::message::Message;
 use super::dto::{
-    ChatCompletionChoice, ChatCompletionChunk, ChatCompletionChunkChoice, ChatCompletionRequest,
-    ChatCompletionResponse, ChatMessageDelta, TokenUsage,
+    ChatCompletionChoice, ChatCompletionChunk, ChatCompletionChunkChoice, ChatCompletionResponse,
+    ChatMessageDelta, TokenUsage,
 };
 
 /// Format a non-streaming response
@@ -251,7 +251,7 @@ pub fn create_streaming_chunks(
     chunks
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use crate::modules::llm_proxy::domain::content::{ContentPart, ImageUrl};

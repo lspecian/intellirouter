@@ -1,3 +1,10 @@
+//! Test Client
+//!
+//! This binary provides a simple client for testing the IntelliRouter chat completion service.
+//!
+//! This binary is only available when the `test-utils` feature is enabled.
+#![cfg(feature = "test-utils")]
+
 use intellirouter::modules::llm_proxy::domain::message::{Message, MessageRole};
 use intellirouter::modules::llm_proxy::dto::ChatCompletionRequest;
 use intellirouter::modules::llm_proxy::service::ChatCompletionService;

@@ -9,10 +9,9 @@ use super::{
     MessageRole, ModelConnector, ModelConnectorFactory, StreamingResponse, TokenUsage,
 };
 use async_trait::async_trait;
-use futures::{stream, Stream, StreamExt};
+use futures::{stream, StreamExt};
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
-use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
@@ -528,7 +527,7 @@ impl ModelConnectorFactory for OllamaConnectorFactory {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use crate::modules::model_registry::connectors::{ChatMessage, MessageRole};

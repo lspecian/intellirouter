@@ -21,7 +21,7 @@ mod reporting;
 mod service_discovery;
 mod test_executor;
 mod types;
-mod validation_workflow;
+mod validation;
 
 pub use boot_orchestrator::BootOrchestrator;
 pub use cli::run_audit_cli;
@@ -34,12 +34,13 @@ pub use reporting::{
 pub use service_discovery::ServiceDiscovery;
 pub use test_executor::TestExecutor;
 pub use types::*;
-pub use validation_workflow::{ValidationConfig, ValidationResult, ValidationWorkflow};
+// Re-export ValidationConfig from validation module instead of types
+pub use validation::{ValidationConfig, ValidationResult, ValidationWorkflow};
 
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::info;
 
 /// Main Audit Controller that orchestrates the entire audit process
 #[derive(Debug)]
@@ -102,16 +103,7 @@ impl AuditController {
         let validation_config = config
             .validation_config
             .clone() // Clone to avoid partial move
-            .unwrap_or_else(|| ValidationConfig {
-                validate_service_discovery: true,
-                validate_direct_communication: true,
-                validate_end_to_end_flows: true,
-                validate_data_integrity: true,
-                validate_error_handling: true,
-                validate_security: true,
-                validation_timeout_secs: 120,
-                fail_fast: true,
-            });
+            .unwrap_or_else(|| validation::ValidationConfig::default());
 
         Self {
             boot_orchestrator: BootOrchestrator::new(

@@ -5,7 +5,6 @@ use axum::{
     response::Response,
 };
 use std::sync::Arc;
-use std::time::Instant;
 use uuid::Uuid;
 
 use super::telemetry::TelemetryManager;

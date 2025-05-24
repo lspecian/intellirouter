@@ -7,4 +7,4 @@
 // We're creating this as a placeholder for future definition-specific errors.
 
 // Re-export the error types from the parent module
-pub use crate::modules::chain_engine::error::{ChainError, ChainResult};
+pub use crate::modules::chain_engine::error::ChainResult;

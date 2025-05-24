@@ -9,7 +9,7 @@ use std::path::Path;
 use handlebars::Handlebars;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info};
 
 #[cfg(feature = "pdf-export")]
 use wkhtmltopdf::{pdf::*, PdfApplication};

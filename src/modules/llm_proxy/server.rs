@@ -4,7 +4,6 @@
 //! for various LLM providers.
 
 use axum::{
-    extract::State,
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -16,7 +15,7 @@ use tokio::net::TcpListener;
 use tokio::sync::Mutex;
 use tracing::{error, info};
 
-use super::{routes, telemetry_integration, websocket, Provider};
+use super::{telemetry_integration, Provider};
 use crate::config::Config;
 use crate::modules::telemetry::{
     create_cost_calculator, init_telemetry, CostCalculator, TelemetryManager,
@@ -231,7 +230,7 @@ async fn health_check() -> impl IntoResponse {
     )
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use crate::config::Config;

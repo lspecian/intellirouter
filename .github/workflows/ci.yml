@@ -10,8 +10,33 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  check:
+    name: Compilation Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.82.0
+          components: rustfmt, clippy
+      
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Check library code
+        run: cargo check --lib --verbose
+      
+      - name: Check binary code
+        run: cargo check --bins --verbose
+      
+      - name: Check all targets
+        run: cargo check --all-targets --verbose
+
   build:
     name: Build
+    needs: check
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -42,7 +67,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
-    needs: build
+    needs: [check, build]
     steps:
       - uses: actions/checkout@v4
       
@@ -55,8 +80,20 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
       
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Run unit tests
+        run: cargo test --lib --verbose
+      
+      - name: Run integration tests
+        run: cargo test --test integration_tests --verbose
+      
+      - name: Run e2e tests
+        run: cargo test --test e2e_tests --verbose
+      
+      - name: Run property tests
+        run: cargo test --test property_tests --verbose
+      
+      - name: Run custom test runner
+        run: cargo run --bin run_tests --features test-utils -- test integration
   
   lint:
     name: Lint
@@ -130,3 +167,83 @@ jobs:
         with:
           files: lcov.info
           fail_ci_if_error: false
+
+  warnings:
+    name: Warning Analysis
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.82.0
+          components: rustfmt, clippy
+      
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+      
+      - name: Install jq
+        run: sudo apt-get install -y jq
+      
+      - name: Run warning analyzer
+        run: ./scripts/analyze_warnings.sh --allow-errors
+      
+      - name: Upload warning report
+        uses: actions/upload-artifact@v4
+        with:
+          name: warning-report
+          path: warning_report.md
+          if-no-files-found: warn
+
+ compilation_tool_tests:
+   name: Compilation Tool Tests
+   runs-on: ubuntu-latest
+   needs: [check, warnings]
+   steps:
+     - uses: actions/checkout@v4
+     
+     - name: Install Rust
+       uses: dtolnay/rust-toolchain@master
+       with:
+         toolchain: 1.82.0
+         components: rustfmt, clippy
+     
+     - name: Rust Cache
+       uses: Swatinem/rust-cache@v2
+     
+     - name: Install jq
+       run: sudo apt-get install -y jq
+     
+     - name: Run compilation check tests
+       run: cargo test --test test_compilation_check -- --test-threads=1
+     
+     - name: Run warning analyzer tests
+       run: ./tests/compilation_tools/test_warning_analyzer.sh
+
+ verify_production_build:
+   name: Verify Production Build
+   runs-on: ubuntu-latest
+   needs: [build, test]
+   steps:
+     - uses: actions/checkout@v4
+     
+     - name: Install Rust
+       uses: dtolnay/rust-toolchain@master
+       with:
+         toolchain: 1.82.0
+     
+     - name: Rust Cache
+       uses: Swatinem/rust-cache@v2
+     
+     - name: Make verification script executable
+       run: chmod +x ./scripts/verify_production_build.sh
+     
+     - name: Verify production build
+       run: ./scripts/verify_production_build.sh
+     
+     - name: Check production binary size
+       run: |
+         cargo build --release
+         ls -lh target/release/intellirouter

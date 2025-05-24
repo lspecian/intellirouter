@@ -8,9 +8,8 @@ use chrono::{DateTime, Utc};
 use futures::Stream;
 use std::collections::HashMap;
 use std::pin::Pin;
-use std::sync::Arc;
 
-use crate::modules::ipc::{IpcError, IpcResult};
+use crate::modules::ipc::IpcResult;
 
 /// Represents a step in a chain
 #[derive(Debug, Clone)]

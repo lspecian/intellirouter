@@ -9,15 +9,22 @@
 //! - Guardrails for content filtering and response formatting
 //! - Model-specific prompt formatting
 
+// Private module declarations
 mod error;
-mod guardrails;
+pub mod guardrails;
 pub mod manager;
-mod persona;
+pub mod persona;
 
+// Re-export specific types for public API
 pub use error::PersonaError;
 pub use guardrails::{ContentFilter, Guardrail, ResponseFormat, TopicRestriction};
 pub use manager::PersonaManager;
 pub use persona::{ExampleExchange, ModelSpecificFormat, Persona};
+
+// Import these from the IPC module instead
+pub use crate::modules::ipc::persona_layer::{
+    ApplyPersonaResponse, ListPersonasResponse, PersonaLayerClient,
+};
 
 // Re-export the legacy API for backward compatibility
 pub use persona::{apply_persona_to_string, create_persona, load_personas};

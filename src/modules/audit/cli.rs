@@ -6,7 +6,7 @@ use tokio::sync::RwLock;
 use chrono::Utc;
 use clap::{Args, Subcommand, ValueEnum};
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use super::types::AuditError;
 use super::AuditConfig;

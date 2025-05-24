@@ -11,16 +11,17 @@ use crate::modules::router_core::config::StrategyConfig;
 use async_trait::async_trait;
 
 // Strategy implementations
+pub mod content_based;
 pub mod priority;
 pub mod round_robin;
 
 // Re-export types for easier access
+pub use content_based::{ContentBasedConfig, ContentBasedStrategy};
 pub use priority::{PriorityConfig, PriorityStrategy};
 pub use round_robin::{RoundRobinConfig, RoundRobinStrategy};
 use tracing::{debug, info, warn};
 
 use crate::modules::model_registry::{
-    connectors::{ChatCompletionRequest, ChatMessage, MessageRole},
     storage::ModelRegistry,
     ModelMetadata, ModelStatus,
 };

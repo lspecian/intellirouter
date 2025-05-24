@@ -11,8 +11,6 @@ use axum::{
     response::IntoResponse,
 };
 use futures::{sink::SinkExt, stream::StreamExt};
-use serde_json::json;
-use std::sync::Arc;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info};
 

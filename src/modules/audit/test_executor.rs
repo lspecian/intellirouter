@@ -8,10 +8,9 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use reqwest::Client;
-use serde_json::{json, Value};
+use serde_json::json;
 use tokio::sync::RwLock;
-use tokio::time::timeout;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 use super::report::AuditReport;
 use super::types::{AuditError, TestConfig, TestFlow, TestResult};

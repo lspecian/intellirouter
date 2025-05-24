@@ -36,4 +36,7 @@ pub trait Router: Send + Sync {
 
     /// Get the model registry
     fn get_registry(&self) -> Arc<ModelRegistry>;
+
+    /// Validate service health before handling requests
+    async fn validate_service_health(&self) -> Result<(), RouterError>;
 }

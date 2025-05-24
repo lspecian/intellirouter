@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde_json::json;
-use tracing::{debug, error, info};
 
 use crate::modules::chain_engine::ChainEngine;
 use crate::modules::health::{DiagnosticsProvider, HealthCheckManager, HttpDependencyChecker};
@@ -58,31 +57,30 @@ impl DiagnosticsProvider for ChainEngineDiagnosticsProvider {
 
         // More detailed diagnostics for higher verbosity levels
         if verbosity >= 2 {
-            // Stub implementation for executor-specific statistics
-            // TODO: Implement get_executor_stats in ChainEngine
-            let executor_details: Vec<serde_json::Value> = Vec::new();
-            diagnostics.insert("executor_stats".to_string(), json!(executor_details));
+            // Get executor-specific statistics
+            let executor_stats = self.chain_engine.get_executor_stats();
+            diagnostics.insert("executor_stats".to_string(), json!(executor_stats));
 
-            // Stub implementation for recent executions
-            // TODO: Implement get_recent_executions in ChainEngine
-            let execution_details: Vec<serde_json::Value> = Vec::new();
-            diagnostics.insert("recent_executions".to_string(), json!(execution_details));
+            // Get recent executions
+            let recent_executions = self.chain_engine.get_recent_executions();
+            diagnostics.insert("recent_executions".to_string(), json!(recent_executions));
         }
 
         // Even more detailed diagnostics for highest verbosity level
         if verbosity >= 3 {
             // Add registered chain definitions
-            // TODO: Implement list_chain_definitions in ChainEngine
-            let chain_details: Vec<serde_json::Value> = Vec::new();
-            diagnostics.insert("chain_definitions".to_string(), json!(chain_details));
+            let chain_definitions = self.chain_engine.list_chain_definitions();
+            diagnostics.insert("chain_definitions".to_string(), json!(chain_definitions));
 
             // Add memory usage statistics
-            // TODO: Implement get_context_cache_size and get_result_cache_size in ChainEngine
+            let context_cache_size = self.chain_engine.get_context_cache_size();
+            let result_cache_size = self.chain_engine.get_result_cache_size();
+
             diagnostics.insert(
                 "memory_usage".to_string(),
                 json!({
-                    "context_cache_size": 0,
-                    "result_cache_size": 0,
+                    "context_cache_size": context_cache_size,
+                    "result_cache_size": result_cache_size,
                 }),
             );
         }

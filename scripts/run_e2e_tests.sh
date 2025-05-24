@@ -11,13 +11,16 @@ echo "Running model routing tests..."
 cargo test --test e2e_tests -- test_model_routing --nocapture
 
 echo "Running multi-step chain tests (non-ignored)..."
-cargo test --test integration -- test_chat_completions_endpoint --nocapture
+cargo test --test integration_tests -- test_chat_completions_endpoint --nocapture
 
 echo "Running RAG injection tests (non-ignored)..."
-cargo test --test integration -- test_rag_injection --nocapture
+cargo test --test integration_tests -- test_rag_injection --nocapture
 
-echo "Running all non-ignored tests..."
-cargo test -- --nocapture --skip-ignored
+echo "Running all non-ignored tests in the test directory..."
+cargo test --test integration_tests --test e2e_tests --test property_tests -- --nocapture --skip-ignored
+
+echo "Running custom test runner..."
+cargo run --bin run_tests --features test-utils -- test integration
 
 echo "Generating test report..."
 # Create a simple test report
