@@ -41,7 +41,8 @@ impl Default for ValidationConfig {
 }
 
 /// Create a new validation configuration with custom settings
-pub fn _create_validation_config(
+#[allow(dead_code)]
+pub fn create_validation_config(
     validate_service_discovery: bool,
     validate_direct_communication: bool,
     validate_end_to_end_flows: bool,

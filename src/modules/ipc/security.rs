@@ -575,10 +575,10 @@ impl<T> SecureGrpcClientBuilder<T> {
             // Generate a token
             let _token = jwt_authenticator.generate_token(&service_name, self.roles)?;
 
-            // Add the token to the channel
-            // TODO: Replace with proper interceptor when tonic is updated
-            // For now, just return the channel without interception
-            channel
+            // TODO: Implement JWT token usage via interceptor. Currently, JWT auth is non-functional.
+            // Issue: [Link to GitHub issue to be created for tracking this task]
+            return Err(SecurityError::Authentication("JWT authentication is configured but not yet implemented. Token was generated but cannot be applied.".to_string()));
+            // The original channel is not further processed or returned in this JWT path.
         } else {
             channel
         };

@@ -95,7 +95,7 @@ pub async fn chat_completions(
         Ok(response) => Ok(Json(response)),
         Err(err) => {
             error!("Error processing completion request: {}", err);
-            Err(convert_router_error_to_api_error(err))
+            Err(_convert_router_error_to_api_error(err))
         }
     }
 }

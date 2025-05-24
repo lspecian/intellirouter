@@ -196,16 +196,6 @@ impl ChainEngine {
         Ok(result)
     }
 
-    // Handle errors in execute_chain by updating stats
-    fn _handle_execution_error(&self, error: ChainError) -> ChainError {
-        // Update stats for failed execution
-        {
-            let mut stats = self.stats.write().unwrap();
-            stats.failed_executions += 1;
-        }
-        error
-    }
-
     /// Build an execution plan for a chain
     fn build_execution_plan(&self, chain: &Chain) -> ChainResult<Vec<String>> {
         // Build dependency graph

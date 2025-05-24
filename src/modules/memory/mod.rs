@@ -27,12 +27,6 @@ pub fn create_conversation() -> types::Conversation {
     types::Conversation::new(id)
 }
 
-/// Generate a unique ID for a conversation
-fn _generate_id() -> String {
-    // Using UUID for better uniqueness
-    Uuid::new_v4().to_string()
-}
-
 /// Add a message to a conversation
 pub fn add_message(conversation: &mut types::Conversation, role: &str, content: &str) {
     let message = types::Message::new(role, content);
