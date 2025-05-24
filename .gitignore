@@ -28,6 +28,7 @@ tasks/
 
 # Rust specific
 /target/
+**/target/
 **/*.rs.bk
 *.pdb
 Cargo.lock
