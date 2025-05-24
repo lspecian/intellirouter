@@ -1,6 +1,5 @@
 //! Error types for the router core module
 
-use std::fmt;
 use thiserror::Error;
 
 use crate::modules::model_registry::{ConnectorError, RegistryError};

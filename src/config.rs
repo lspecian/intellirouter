@@ -524,7 +524,7 @@ impl Config {
             .map_err(|e| format!("Failed to build config: {}", e))?;
 
         // Deserialize
-        let mut config: Self = config_file
+        let config: Self = config_file
             .try_deserialize()
             .map_err(|e| format!("Failed to deserialize config: {}", e))?;
 

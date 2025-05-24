@@ -3,11 +3,15 @@
 //! This module contains tests for the Model Registry module, including
 //! concurrency tests and persistence tests.
 
+#[cfg(test)]
 pub mod concurrency_tests;
+#[cfg(test)]
 pub mod persistence_tests;
 
+#[cfg(test)]
 use crate::modules::model_registry::*;
 
+#[cfg(test)]
 #[test]
 fn test_global_registry() {
     // Clear the global registry first

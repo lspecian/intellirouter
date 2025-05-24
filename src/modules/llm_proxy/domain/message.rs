@@ -89,7 +89,7 @@ impl Message {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use crate::modules::llm_proxy::domain::content::{ContentPart, ImageUrl};

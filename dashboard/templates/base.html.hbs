@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}} - IntelliRouter Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <meta http-equiv="refresh" content="{{refresh_interval}}">
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav id="sidebar" class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
+                <div class="position-sticky pt-3">
+                    <div class="sidebar-header mb-4">
+                        <h3 class="text-light">IntelliRouter</h3>
+                        <p class="text-muted">Project Dashboard</p>
+                    </div>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link {{#if (eq active_page 'home')}}active{{/if}}" href="/">
+                                <i class="bi bi-house-door"></i> Home
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{#if (eq active_page 'code-quality')}}active{{/if}}"
+                                href="/code-quality">
+                                <i class="bi bi-code-square"></i> Code Quality
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{#if (eq active_page 'performance')}}active{{/if}}" href="/performance">
+                                <i class="bi bi-speedometer"></i> Performance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{#if (eq active_page 'security')}}active{{/if}}" href="/security">
+                                <i class="bi bi-shield-check"></i> Security
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{#if (eq active_page 'documentation')}}active{{/if}}"
+                                href="/documentation">
+                                <i class="bi bi-file-text"></i> Documentation
+                            </a>
+                        </li>
+                    </ul>
+
+                    <h6
+                        class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
+                        <span>Project Health</span>
+                    </h6>
+                    <div class="px-3 py-2">
+                        <div class="progress mb-2" style="height: 20px;">
+                            <div class="progress-bar {{project_health_class}}" role="progressbar"
+                                style="width: {{project_health.overall_health}}%;"
+                                aria-valuenow="{{project_health.overall_health}}" aria-valuemin="0" aria-valuemax="100">
+                                {{project_health.overall_health}}%
+                            </div>
+                        </div>
+                        <div class="small text-muted">Last updated: {{last_updated}}</div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <div
+                    class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">{{page_title}}</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <div class="btn-group me-2">
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                onclick="window.location.reload()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="window.print()">
+                                <i class="bi bi-printer"></i> Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{> content}}
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+
+</html>

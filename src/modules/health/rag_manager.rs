@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde_json::json;
-use tracing::{debug, error, info};
 
 use crate::modules::health::{DiagnosticsProvider, HealthCheckManager, HttpDependencyChecker};
 use crate::modules::rag_manager::manager::RagManager;
@@ -34,61 +33,78 @@ impl DiagnosticsProvider for RagManagerDiagnosticsProvider {
         let mut diagnostics = HashMap::new();
 
         // Basic diagnostics (verbosity level 1)
-        // TODO: Implement list_sources in RagManager
-        diagnostics.insert("total_sources".to_string(), json!(0));
-        diagnostics.insert("file_sources".to_string(), json!(0));
-        diagnostics.insert("api_sources".to_string(), json!(0));
-        diagnostics.insert("database_sources".to_string(), json!(0));
+        let sources = self.rag_manager.list_sources();
+        diagnostics.insert("total_sources".to_string(), json!(sources.len()));
+
+        // Count sources by type
+        let file_sources = sources
+            .iter()
+            .filter(|(_, source_type, _)| source_type == "file")
+            .count();
+        let api_sources = sources
+            .iter()
+            .filter(|(_, source_type, _)| source_type == "api")
+            .count();
+        let database_sources = sources
+            .iter()
+            .filter(|(_, source_type, _)| source_type == "database")
+            .count();
+
+        diagnostics.insert("file_sources".to_string(), json!(file_sources));
+        diagnostics.insert("api_sources".to_string(), json!(api_sources));
+        diagnostics.insert("database_sources".to_string(), json!(database_sources));
 
         // Add vector database stats
-        // TODO: Implement get_vector_db_stats in RagManager
-        diagnostics.insert("vector_db_collections".to_string(), json!(0));
+        let vector_db_stats = self.rag_manager.get_vector_db_stats().await;
+        let total_collections = vector_db_stats.len();
+        let total_vectors: usize = vector_db_stats.values().sum();
 
-        diagnostics.insert("vector_db_total_vectors".to_string(), json!(0));
+        diagnostics.insert(
+            "vector_db_collections".to_string(),
+            json!(total_collections),
+        );
+        diagnostics.insert("vector_db_total_vectors".to_string(), json!(total_vectors));
 
         // More detailed diagnostics for higher verbosity levels
         if verbosity >= 2 {
             // Add source details
-            // TODO: Implement list_sources in RagManager
-            let source_details: Vec<serde_json::Value> = Vec::new();
+            let source_details: Vec<serde_json::Value> = sources
+                .iter()
+                .map(|(name, source_type, metadata)| {
+                    let mut source_json = serde_json::Map::new();
+                    source_json.insert("name".to_string(), json!(name));
+                    source_json.insert("type".to_string(), json!(source_type));
+
+                    let metadata_json = metadata
+                        .iter()
+                        .map(|(k, v)| (k.clone(), json!(v)))
+                        .collect::<serde_json::Map<String, serde_json::Value>>();
+
+                    source_json.insert("metadata".to_string(), json!(metadata_json));
+                    serde_json::Value::Object(source_json)
+                })
+                .collect();
+
             diagnostics.insert("sources".to_string(), json!(source_details));
 
             // Add retrieval statistics
-            // TODO: Implement get_retrieval_stats in RagManager
-            diagnostics.insert(
-                "retrieval_stats".to_string(),
-                json!({
-                    "total_retrievals": 0,
-                    "successful_retrievals": 0,
-                    "failed_retrievals": 0,
-                    "average_retrieval_time_ms": 0,
-                    "average_results_per_query": 0,
-                }),
-            );
+            let retrieval_stats = self.rag_manager.get_retrieval_stats();
+            diagnostics.insert("retrieval_stats".to_string(), json!(retrieval_stats));
         }
 
         // Even more detailed diagnostics for highest verbosity level
         if verbosity >= 3 {
             // Add collection details
-            // TODO: Implement list_collections in RagManager
-            let collection_details: Vec<serde_json::Value> = Vec::new();
-            diagnostics.insert("collections".to_string(), json!(collection_details));
+            let collections = self.rag_manager.list_collections().await;
+            diagnostics.insert("collections".to_string(), json!(collections));
 
             // Add embedding model information
-            // TODO: Implement get_embedding_model_info in RagManager
-            diagnostics.insert(
-                "embedding_model".to_string(),
-                json!({
-                    "name": "stub_model",
-                    "dimension": 0,
-                    "provider": "stub_provider",
-                }),
-            );
+            let embedding_model_info = self.rag_manager.get_embedding_model_info();
+            diagnostics.insert("embedding_model".to_string(), json!(embedding_model_info));
 
             // Add recent queries
-            // TODO: Implement get_recent_queries in RagManager
-            let query_details: Vec<serde_json::Value> = Vec::new();
-            diagnostics.insert("recent_queries".to_string(), json!(query_details));
+            let recent_queries = self.rag_manager.get_recent_queries();
+            diagnostics.insert("recent_queries".to_string(), json!(recent_queries));
         }
 
         Ok(diagnostics)

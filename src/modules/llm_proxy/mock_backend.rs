@@ -2,11 +2,14 @@
 //!
 //! This module provides a mock implementation of a model backend
 //! for testing and development purposes.
+//!
+//! This module is only available when the `test-utils` feature is enabled.
+#![cfg(feature = "test-utils")]
 
 use async_trait::async_trait;
 use chrono::Utc;
 use futures::stream;
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::AtomicU64;
 use tracing::debug;
 use uuid::Uuid;
 
@@ -15,7 +18,7 @@ use crate::modules::model_registry::{
         ChatCompletionRequest, ChatCompletionResponse, ChatMessage, ModelConnector,
         StreamingResponse,
     },
-    ConnectorConfig, ConnectorError, ModelType,
+    ConnectorConfig, ConnectorError,
 };
 
 /// Static counter for request IDs

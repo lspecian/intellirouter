@@ -10,8 +10,7 @@ pub mod persistence;
 pub mod storage;
 pub mod types;
 
-#[cfg(test)]
-mod tests;
+// Tests moved to tests/unit/modules/model_registry/
 
 use std::sync::Arc;
 
@@ -37,6 +36,9 @@ pub use types::{
     model::{ModelMetadata, ModelType},
     status::ModelStatus,
 };
+
+// Re-export the client trait from IPC module
+pub use crate::modules::ipc::ModelRegistryClient;
 
 // Provide a global instance for convenience
 use std::sync::OnceLock;

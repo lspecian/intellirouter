@@ -1,0 +1,112 @@
+name: Performance Benchmarks
+
+on:
+  schedule:
+    # Run benchmarks daily at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allow manual triggering
+  push:
+    branches:
+      - main
+    paths:
+      # Only run when code changes, not documentation
+      - 'src/**'
+      - 'benches/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+
+jobs:
+  benchmark:
+    name: Run Performance Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for comparing benchmarks
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq bc
+
+      - name: Build benchmarks
+        run: cargo build --release --benches
+
+      - name: Run benchmarks
+        run: ./scripts/run_benchmarks.sh
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: |
+            metrics/performance/benchmark_results_*.csv
+            metrics/performance/reports/*.md
+
+      - name: Check for performance regressions
+        id: check-regressions
+        run: |
+          REGRESSION_COUNT=$(grep -c "⚠️ Regression" metrics/performance/reports/regression_report_*.md || echo "0")
+          echo "Regression count: $REGRESSION_COUNT"
+          echo "regression_count=$REGRESSION_COUNT" >> $GITHUB_OUTPUT
+          if [ "$REGRESSION_COUNT" -gt 0 ]; then
+            echo "::warning::Performance regressions detected! Check the regression report for details."
+          fi
+
+      - name: Create GitHub Issue for Regressions
+        if: steps.check-regressions.outputs.regression_count > 0
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            
+            // Find the latest regression report
+            const reportsDir = path.join(process.env.GITHUB_WORKSPACE, 'metrics/performance/reports');
+            const files = fs.readdirSync(reportsDir);
+            const regressionReports = files.filter(file => file.startsWith('regression_report_'));
+            regressionReports.sort();
+            const latestReport = regressionReports[regressionReports.length - 1];
+            
+            // Read the report content
+            const reportPath = path.join(reportsDir, latestReport);
+            const reportContent = fs.readFileSync(reportPath, 'utf8');
+            
+            // Create an issue
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Performance Regression Detected - ${new Date().toISOString().split('T')[0]}`,
+              body: reportContent,
+              labels: ['performance', 'regression', 'automated']
+            });
+            
+            console.log(`Created issue #${issue.data.number}: ${issue.data.html_url}`);
+
+      - name: Update Performance Dashboard
+        run: |
+          echo "Updating performance dashboard..."
+          # This is a placeholder for updating a performance dashboard
+          # In a real implementation, this would push the results to a dashboard service
+          # or update a GitHub Pages site with the latest benchmark results

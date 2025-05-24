@@ -14,7 +14,7 @@ use crate::modules::ipc::memory::responses::{
     StoreChainResultInConversationResponse,
 };
 use crate::modules::ipc::memory::types::{Conversation, Message, StepResult};
-use crate::modules::ipc::{IpcError, IpcResult};
+use crate::modules::ipc::IpcResult;
 
 /// gRPC implementation of the Memory client
 pub struct GrpcMemoryClient {

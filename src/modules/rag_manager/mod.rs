@@ -4,35 +4,42 @@
 //! It provides functionality for document indexing, retrieval, and
 //! integration with LLM requests.
 
-mod file_source;
+// Private module declarations
+pub mod file_source;
 pub mod manager;
-mod source;
-mod types;
+pub mod source;
+pub mod types;
 
-// Re-export the new types and traits
+// Re-export specific types for public API
 pub use file_source::FileContextSource;
 pub use manager::RagManager;
 pub use source::ContextSource;
-pub use types::{ContextChunk, Document, RAGConfig, RagError};
+pub use types::{ContextChunk, Document as RagDocument, RAGConfig, RagError};
+
+// Import these from the IPC module instead
+pub use crate::modules::ipc::rag_manager::{
+    AugmentRequestResponse, Document as IpcDocument, IndexDocumentResponse, ListDocumentsResponse,
+    RAGManagerClient, RetrieveDocumentsResponse,
+};
 
 // Provide backward-compatible functions
 
 /// Initialize the RAG system with the specified configuration
-pub fn init(config: RAGConfig) -> Result<(), String> {
+pub fn init(_config: RAGConfig) -> Result<(), String> {
     // This is just a stub for backward compatibility
     // In a real implementation, this would initialize the RAG system
     Ok(())
 }
 
 /// Index a document for retrieval
-pub fn index_document(doc: Document) -> Result<(), String> {
+pub fn index_document(_doc: IpcDocument) -> Result<(), String> {
     // This is just a stub for backward compatibility
     // In a real implementation, this would index the document
     Ok(())
 }
 
 /// Retrieve relevant documents for a query
-pub fn retrieve(query: &str, top_k: usize) -> Vec<Document> {
+pub fn retrieve(_query: &str, _top_k: usize) -> Vec<IpcDocument> {
     // This is just a stub for backward compatibility
     // In a real implementation, this would retrieve documents
     Vec::new()

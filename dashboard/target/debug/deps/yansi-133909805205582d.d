@@ -1,0 +1,12 @@
+/home/luis/Development/oss/intellirouter/dashboard/target/debug/deps/libyansi-133909805205582d.rmeta: /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/lib.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/macros.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/windows.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/paint.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/style.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/color.rs
+
+/home/luis/Development/oss/intellirouter/dashboard/target/debug/deps/libyansi-133909805205582d.rlib: /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/lib.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/macros.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/windows.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/paint.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/style.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/color.rs
+
+/home/luis/Development/oss/intellirouter/dashboard/target/debug/deps/yansi-133909805205582d.d: /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/lib.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/macros.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/windows.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/paint.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/style.rs /home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/color.rs
+
+/home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/lib.rs:
+/home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/macros.rs:
+/home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/windows.rs:
+/home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/paint.rs:
+/home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/style.rs:
+/home/luis/.cargo/registry/src/index.crates.io-6f17d22bba15001f/yansi-0.5.1/src/color.rs:

@@ -5,9 +5,12 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
-use std::time::Duration;
 
-use super::validation_workflow::ValidationConfig;
+// Import ValidationConfig from validation module
+use super::validation::ValidationConfig;
+
+// ValidationConfig moved to validation/config.rs to resolve circular dependency
+// Re-exported through validation/mod.rs
 
 /// Configuration for the Audit Controller
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -162,6 +165,12 @@ pub enum ServiceType {
     Redis,
     /// ChromaDB service
     ChromaDb,
+    /// Model Registry service
+    ModelRegistry,
+    /// Memory service
+    Memory,
+    /// Orchestrator service
+    Orchestrator,
 }
 
 impl fmt::Display for ServiceType {
@@ -173,6 +182,9 @@ impl fmt::Display for ServiceType {
             ServiceType::PersonaLayer => write!(f, "summarizer"),
             ServiceType::Redis => write!(f, "redis"),
             ServiceType::ChromaDb => write!(f, "chromadb"),
+            ServiceType::ModelRegistry => write!(f, "model-registry"),
+            ServiceType::Memory => write!(f, "memory"),
+            ServiceType::Orchestrator => write!(f, "orchestrator-service"),
         }
     }
 }
@@ -186,6 +198,12 @@ pub enum ServiceStatus {
     Starting,
     /// Service is running
     Running,
+    /// Service is active and healthy
+    Active,
+    /// Service is inactive
+    Inactive,
+    /// Service is running but in a degraded state
+    Degraded,
     /// Service failed to start
     Failed,
     /// Service is shutting down
@@ -200,6 +218,9 @@ impl fmt::Display for ServiceStatus {
             ServiceStatus::NotStarted => write!(f, "Not Started"),
             ServiceStatus::Starting => write!(f, "Starting"),
             ServiceStatus::Running => write!(f, "Running"),
+            ServiceStatus::Active => write!(f, "Active"),
+            ServiceStatus::Inactive => write!(f, "Inactive"),
+            ServiceStatus::Degraded => write!(f, "Degraded"),
             ServiceStatus::Failed => write!(f, "Failed"),
             ServiceStatus::ShuttingDown => write!(f, "Shutting Down"),
             ServiceStatus::Stopped => write!(f, "Stopped"),
@@ -284,12 +305,16 @@ impl fmt::Display for LogLevel {
 pub struct ServiceInfo {
     /// Service type
     pub service_type: ServiceType,
+    /// Service name
+    pub name: String,
     /// Service status
     pub status: ServiceStatus,
     /// Service host
     pub host: String,
     /// Service port
     pub port: u16,
+    /// Main service endpoint
+    pub endpoint: String,
     /// Service health endpoint
     pub health_endpoint: String,
     /// Service readiness endpoint
@@ -308,12 +333,16 @@ impl ServiceInfo {
     /// Create a new service info
     pub fn new(service_type: ServiceType, host: &str, port: u16) -> Self {
         let base_url = format!("http://{}:{}", host, port);
+        // Generate a name based on service type
+        let name = format!("{}", service_type);
 
         Self {
             service_type,
+            name,
             status: ServiceStatus::NotStarted,
             host: host.to_string(),
             port,
+            endpoint: base_url.clone(),
             health_endpoint: format!("{}/health", base_url),
             readiness_endpoint: format!("{}/readiness", base_url),
             diagnostics_endpoint: format!("{}/diagnostics", base_url),
@@ -330,6 +359,9 @@ impl ServiceInfo {
                 ServiceType::PersonaLayer => vec![ServiceType::Redis, ServiceType::Router],
                 ServiceType::Redis => vec![],
                 ServiceType::ChromaDb => vec![],
+                ServiceType::ModelRegistry => vec![ServiceType::Redis],
+                ServiceType::Memory => vec![ServiceType::Redis],
+                ServiceType::Orchestrator => vec![ServiceType::Redis, ServiceType::Router],
             },
         }
     }

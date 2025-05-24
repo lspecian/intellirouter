@@ -1,131 +1,107 @@
 {
   "meta": {
-    "generatedAt": "2025-05-16T19:51:42.179Z",
-    "tasksAnalyzed": 15,
+    "generatedAt": "2025-05-20T22:11:59.614Z",
+    "tasksAnalyzed": 12,
     "thresholdScore": 5,
     "projectName": "Taskmaster",
-    "usedResearch": true
+    "usedResearch": false
   },
   "complexityAnalysis": [
     {
       "taskId": 1,
-      "taskTitle": "Project Setup and Core Architecture",
-      "complexityScore": 9,
-      "recommendedSubtasks": 10,
-      "expansionPrompt": "Break down the project setup into subtasks for initializing the repository, configuring the Rust project, establishing directory structure, setting up configuration management, implementing CLI parsing, Dockerization, CI/CD, and scaffolding each core module directory.",
-      "reasoning": "This task involves foundational work across multiple domains: Rust project setup, architecture design, configuration management, Docker/CI integration, and scaffolding for all core modules. Each area requires careful planning and implementation, making the overall complexity high and justifying a detailed subtask breakdown."
+      "taskTitle": "Create intellirouter-test-utils Crate",
+      "complexityScore": 3,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Break down the creation of the intellirouter-test-utils crate into detailed steps including: 1) Setting up the crate structure, 2) Implementing the basic modules (fixtures, mocks, helpers), and 3) Configuring workspace integration.",
+      "reasoning": "This is a relatively straightforward task with clear steps for creating a new crate. The complexity is low as it involves standard Rust project setup procedures that are well-documented. The task is self-contained with no dependencies."
     },
     {
       "taskId": 2,
-      "taskTitle": "Implement LLM Proxy Module",
-      "complexityScore": 8,
-      "recommendedSubtasks": 8,
-      "expansionPrompt": "Expand into subtasks for web server setup, route handler implementation, request validation, streaming and non-streaming response support, WebSocket integration, response formatting, error handling, and API conformance testing.",
-      "reasoning": "The LLM proxy must provide a robust, OpenAI-compatible API with both streaming and non-streaming support, requiring careful design of HTTP endpoints, validation, and error handling. The need for compatibility and performance adds to the complexity."
+      "taskTitle": "Create Organized Test Directory Structure",
+      "complexityScore": 2,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Break down the creation of the test directory structure into: 1) Creating the main test directories (unit, integration, e2e, bin), 2) Setting up mod.rs files with proper module declarations, and 3) Creating the README.md with comprehensive testing documentation.",
+      "reasoning": "This is a simple task involving directory creation and basic file setup. The structure is clearly defined in the task description, and there are no technical challenges beyond standard file system operations."
     },
     {
       "taskId": 3,
-      "taskTitle": "Implement Model Registry Module",
-      "complexityScore": 7,
-      "recommendedSubtasks": 7,
-      "expansionPrompt": "Decompose into subtasks for data structure design, in-memory storage implementation, API creation for CRUD operations, health checking, capability metadata support, optional persistence, and concurrency testing.",
-      "reasoning": "Tracking and managing model metadata with thread-safe access and extensibility for future persistence is moderately complex, especially with the need for robust APIs and health checks."
+      "taskTitle": "Update Cargo Configuration for Test Separation",
+      "complexityScore": 4,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the Cargo configuration update into: 1) Adding dev-dependencies including the test-utils crate, 2) Configuring feature flags for test utilities, 3) Setting up test-only binaries and test configurations, and 4) Verifying the configuration works correctly.",
+      "reasoning": "This task requires understanding of Cargo's configuration system and how to properly separate test code from production code. It has a dependency on task #1 and requires careful configuration to ensure tests run correctly while keeping the production binary clean."
     },
     {
       "taskId": 4,
-      "taskTitle": "Implement Router Core Module",
-      "complexityScore": 8,
-      "recommendedSubtasks": 7,
-      "expansionPrompt": "Expand into subtasks for interface and data structure design, routing strategy trait implementation, basic strategies (priority, round-robin), routing logic, fallback/retry mechanisms, model registry integration, and comprehensive testing.",
-      "reasoning": "Programmable routing with pluggable strategies, error handling, and integration with the model registry requires careful abstraction and robust logic, making this a high-complexity module."
+      "taskTitle": "Identify and Extract Common Test Utilities",
+      "complexityScore": 7,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the extraction of test utilities into: 1) Scanning the codebase for test utility code, 2) Categorizing utilities by type (fixtures, mocks, helpers), 3) Moving code to the test-utils crate with proper module organization, 4) Updating imports in existing test files, and 5) Implementing feature flags for utilities that must remain in the main codebase.",
+      "reasoning": "This task requires thorough code analysis and refactoring across the codebase. It has higher complexity because it involves identifying code patterns, making decisions about what to extract, and ensuring all references are updated correctly. It depends on both the test-utils crate and directory structure being in place."
     },
     {
       "taskId": 5,
-      "taskTitle": "Implement Persona Layer Module",
+      "taskTitle": "Move Module-Specific Test Files",
       "complexityScore": 6,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Break down into subtasks for persona data structure/interface design, templating system implementation, persona management APIs, prompt injection logic, model-specific formatting, and guardrail enforcement.",
-      "reasoning": "While the persona layer is conceptually straightforward, implementing dynamic templating, guardrails, and integration with requests adds moderate complexity."
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the process of moving module-specific test files into: 1) Identifying all test files in the src directory, 2) Creating corresponding directory structures in tests/unit/, 3) Moving each test file with appropriate import updates, and 4) Verifying all moved tests still pass.",
+      "reasoning": "This task involves significant refactoring of test files across the codebase. The complexity comes from ensuring all imports are correctly updated and that test functionality is preserved. It depends on the test directory structure and Cargo configuration being set up correctly."
     },
     {
       "taskId": 6,
-      "taskTitle": "Implement Chain Engine Module",
-      "complexityScore": 9,
-      "recommendedSubtasks": 9,
-      "expansionPrompt": "Expand into subtasks for chain definition format design, execution engine implementation, sequential/parallel step support, conditional logic, chain management APIs, router and persona integration, dependency resolution, validation, and testing.",
-      "reasoning": "Orchestrating multi-step, multi-role inference flows with dependencies, conditions, and integration with other modules is architecturally complex and requires careful coordination."
+      "taskTitle": "Move Custom Test Runner",
+      "complexityScore": 4,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Break down moving the custom test runner into: 1) Creating the tests/bin directory and moving the runner file, 2) Updating imports and configurations in the test runner to work with the new structure, and 3) Testing the runner to ensure it works correctly with the new test organization.",
+      "reasoning": "This task is moderately complex as it involves moving a specific component and ensuring it continues to function correctly. The test runner likely has dependencies on other parts of the codebase that need to be updated, but the scope is limited to a single file."
     },
     {
       "taskId": 7,
-      "taskTitle": "Implement Memory Module",
-      "complexityScore": 7,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Decompose into subtasks for memory interface/data structure design, in-memory backend implementation, Redis integration, API creation for memory operations, windowing logic, and concurrency/performance testing.",
-      "reasoning": "Supporting both short-term and long-term memory with pluggable backends and concurrency concerns introduces moderate to high complexity."
+      "taskTitle": "Remove Test Code from Production Modules",
+      "complexityScore": 8,
+      "recommendedSubtasks": 5,
+      "expansionPrompt": "Break down the removal of test code from production modules into: 1) Scanning the codebase for test code in production modules, 2) Categorizing test code for appropriate relocation, 3) Moving test modules to the unit test directory, 4) Implementing feature flags for necessary test helpers, and 5) Verifying production code still compiles and functions correctly.",
+      "reasoning": "This is a high-complexity task requiring careful code analysis and refactoring. There's risk of breaking production functionality if test code is incorrectly removed. It requires understanding of how test code might be intertwined with production code and depends on multiple previous tasks being completed."
     },
     {
       "taskId": 8,
-      "taskTitle": "Implement RAG Manager Module",
-      "complexityScore": 7,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Break down into subtasks for RAG interface/data structure design, file-based context source implementation, context retrieval APIs, context injection logic, context fusion/summarization, and integration testing.",
-      "reasoning": "Managing retrieval-augmented generation with extensible context sources and injection logic is moderately complex, especially as the system scales."
+      "taskTitle": "Update CI/CD Pipeline Configuration",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the CI/CD pipeline update into: 1) Identifying all CI/CD configuration files that need updates, 2) Modifying test commands to work with the new structure, 3) Adding separate steps for different test categories, and 4) Adding verification steps to ensure test code is not included in production builds.",
+      "reasoning": "This task requires understanding of CI/CD systems and how they interact with the test structure. It has moderate complexity because it involves updating configuration files that affect the build and test process, with potential for breaking the CI pipeline if done incorrectly."
     },
     {
       "taskId": 9,
-      "taskTitle": "Implement Authentication and Authorization Module",
-      "complexityScore": 6,
-      "recommendedSubtasks": 5,
-      "expansionPrompt": "Expand into subtasks for interface design, API key validation logic, middleware implementation, RBAC support, and security testing.",
-      "reasoning": "Authentication and RBAC are well-understood patterns, but require careful implementation for security and extensibility."
+      "taskTitle": "Create Integration Tests Structure",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the integration tests structure creation into: 1) Identifying existing integration tests in the codebase, 2) Creating appropriate subdirectories in tests/integration/, 3) Moving integration tests to the new structure with updated imports, and 4) Creating a comprehensive mod.rs file that includes all integration test modules.",
+      "reasoning": "This task involves organizing integration tests which may have complex dependencies and requirements. It requires understanding how integration tests interact with the system and ensuring they continue to function correctly after being moved."
     },
     {
       "taskId": 10,
-      "taskTitle": "Implement Telemetry Module",
-      "complexityScore": 6,
-      "recommendedSubtasks": 5,
-      "expansionPrompt": "Decompose into subtasks for telemetry interface/data structure design, logging setup, metrics collection, middleware integration, and testing/log validation.",
-      "reasoning": "Telemetry involves integrating logging and metrics, which is moderately complex but follows established patterns."
+      "taskTitle": "Create End-to-End Tests Structure",
+      "complexityScore": 5,
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the e2e tests structure creation into: 1) Creating the basic directory structure for e2e tests, 2) Moving any existing e2e tests to the new structure, 3) Implementing helper functions specific to e2e testing, and 4) Creating a mod.rs file that organizes all e2e test modules.",
+      "reasoning": "Similar to the integration tests task, this involves organizing complex tests that interact with the entire system. E2E tests often have specific requirements for test environments and setup/teardown procedures that need to be carefully implemented."
     },
     {
       "taskId": 11,
-      "taskTitle": "Implement Plugin SDK Module",
-      "complexityScore": 7,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Break down into subtasks for plugin interface design, trait definitions, plugin registry implementation, loading mechanism, sample plugin creation, and integration testing.",
-      "reasoning": "Designing a flexible plugin system with safe dynamic loading and extensibility is moderately complex, especially in Rust."
+      "taskTitle": "Update Documentation",
+      "complexityScore": 4,
+      "recommendedSubtasks": 3,
+      "expansionPrompt": "Break down the documentation update into: 1) Creating or updating TESTING.md with comprehensive information on the new test structure, 2) Updating any existing documentation that references the old test structure, and 3) Adding inline documentation in key test files explaining the test approach.",
+      "reasoning": "This task requires clear communication of the new test structure through documentation. While not technically complex, it requires a comprehensive understanding of the entire test system to create accurate and helpful documentation for other developers."
     },
     {
       "taskId": 12,
-      "taskTitle": "Implement Model Connectors",
-      "complexityScore": 7,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Expand into subtasks for connector interface design, Ollama connector implementation, OpenAI connector implementation, streaming support, request/response conversion, and error handling/testing.",
-      "reasoning": "Supporting multiple LLM backends with both streaming and non-streaming modes, plus robust error handling, is moderately complex."
-    },
-    {
-      "taskId": 13,
-      "taskTitle": "Develop Python SDK",
-      "complexityScore": 7,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Decompose into subtasks for SDK interface design, core client implementation, chat completions (blocking/streaming), chain execution, configuration management, and documentation/testing.",
-      "reasoning": "Building a full-featured, idiomatic Python SDK with streaming and chain support requires careful API design and robust error handling."
-    },
-    {
-      "taskId": 14,
-      "taskTitle": "Develop TypeScript SDK",
-      "complexityScore": 7,
-      "recommendedSubtasks": 6,
-      "expansionPrompt": "Break down into subtasks for SDK interface design, core client implementation, chat completions (Promise/streaming), chain execution, configuration management, and documentation/testing.",
-      "reasoning": "Similar to the Python SDK, the TypeScript SDK must provide a clean, idiomatic interface with streaming and chain support, requiring moderate complexity."
-    },
-    {
-      "taskId": 15,
-      "taskTitle": "Create Deployment Configuration",
+      "taskTitle": "Verify and Measure Improvements",
       "complexityScore": 6,
-      "recommendedSubtasks": 5,
-      "expansionPrompt": "Expand into subtasks for Dockerfile creation, Docker Compose setup, Helm chart development, environment-specific configuration, and deployment validation/testing.",
-      "reasoning": "Deployment configuration spans multiple environments and tools, but follows established DevOps practices, making it moderately complex."
+      "recommendedSubtasks": 4,
+      "expansionPrompt": "Break down the verification process into: 1) Running all tests to verify they pass with the new structure, 2) Measuring and comparing binary size before and after changes, 3) Measuring and comparing compilation time before and after changes, and 4) Creating a comprehensive report documenting the improvements.",
+      "reasoning": "This task involves comprehensive testing and measurement across the entire project. It requires careful benchmarking and comparison to accurately assess the impact of the changes. The complexity comes from ensuring all tests pass and accurately measuring performance metrics."
     }
   ]
 }

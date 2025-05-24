@@ -1,0 +1,229 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sundays at midnight
+
+jobs:
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for metrics comparison
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      
+      - name: Install cargo-tarpaulin
+        uses: actions-rs/install@v0.1
+        with:
+          crate: cargo-tarpaulin
+          version: latest
+          use-tool-cache: true
+      
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      
+      - name: Create metrics directory
+        run: mkdir -p metrics
+      
+      - name: Restore previous metrics
+        uses: actions/cache@v3
+        with:
+          path: metrics
+          key: metrics-${{ github.ref }}
+          restore-keys: |
+            metrics-
+      
+      - name: Make scripts executable
+        run: |
+          chmod +x scripts/analyze_warnings.sh
+          chmod +x scripts/generate_code_quality_report.sh
+          chmod +x scripts/generate_metrics_charts.sh
+          chmod +x scripts/ci_code_quality.sh
+      
+      - name: Run code quality check
+        run: ./scripts/ci_code_quality.sh
+      
+      - name: Upload code quality report
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-quality-report
+          path: |
+            metrics/ci_report.json
+            metrics/code_quality_report.md
+            metrics/charts/
+      
+      - name: Check if goals are met
+        id: check_goals
+        run: |
+          if [ -f "docs/code_quality_goals.md" ]; then
+            ENFORCE_GOALS=$(grep -A 10 "## Configuration" docs/code_quality_goals.md | grep "Enforce Goals:" | grep -o "true\|false")
+            if [ "$ENFORCE_GOALS" = "true" ]; then
+              echo "::set-output name=enforce::true"
+            else
+              echo "::set-output name=enforce::false"
+            fi
+          else
+            echo "::set-output name=enforce::false"
+          fi
+      
+      - name: Fail if goals are not met and enforcement is enabled
+        if: steps.check_goals.outputs.enforce == 'true'
+        run: |
+          if [ -f "metrics/ci_report.json" ]; then
+            # Extract metrics
+            TOTAL_WARNINGS=$(grep -o '"total_warnings":[0-9]*' metrics/ci_report.json | cut -d':' -f2)
+            TEST_COVERAGE=$(grep -o '"test_coverage":[0-9.]*' metrics/ci_report.json | cut -d':' -f2)
+            DOC_COVERAGE=$(grep -o '"documentation_coverage":[0-9.]*' metrics/ci_report.json | cut -d':' -f2)
+            WARNING_DENSITY=$(grep -o '"warning_density":[0-9.]*' metrics/ci_report.json | cut -d':' -f2)
+            
+            # Extract goals
+            WARNING_GOAL=$(grep -A 10 "## Short-term Goals" docs/code_quality_goals.md | grep "Total Warnings:" | grep -o "[0-9]*")
+            COVERAGE_GOAL=$(grep -A 10 "## Short-term Goals" docs/code_quality_goals.md | grep "Test Coverage:" | grep -o "[0-9]*")
+            DOC_COVERAGE_GOAL=$(grep -A 10 "## Short-term Goals" docs/code_quality_goals.md | grep "Documentation Coverage:" | grep -o "[0-9]*")
+            DENSITY_GOAL=$(grep -A 10 "## Short-term Goals" docs/code_quality_goals.md | grep "Warning Density:" | grep -o "[0-9.]*")
+            
+            # Check if goals are met
+            FAILURES=0
+            
+            if [ -n "$WARNING_GOAL" ] && [ "$TOTAL_WARNINGS" -gt "$WARNING_GOAL" ]; then
+              echo "Total Warnings: $TOTAL_WARNINGS (Goal: $WARNING_GOAL) - FAILED"
+              FAILURES=$((FAILURES + 1))
+            fi
+            
+            if [ -n "$COVERAGE_GOAL" ] && (( $(echo "$TEST_COVERAGE < $COVERAGE_GOAL" | bc -l) )); then
+              echo "Test Coverage: $TEST_COVERAGE% (Goal: $COVERAGE_GOAL%) - FAILED"
+              FAILURES=$((FAILURES + 1))
+            fi
+            
+            if [ -n "$DOC_COVERAGE_GOAL" ] && (( $(echo "$DOC_COVERAGE < $DOC_COVERAGE_GOAL" | bc -l) )); then
+              echo "Documentation Coverage: $DOC_COVERAGE% (Goal: $DOC_COVERAGE_GOAL%) - FAILED"
+              FAILURES=$((FAILURES + 1))
+            fi
+            
+            if [ -n "$DENSITY_GOAL" ] && (( $(echo "$WARNING_DENSITY > $DENSITY_GOAL" | bc -l) )); then
+              echo "Warning Density: $WARNING_DENSITY (Goal: $DENSITY_GOAL) - FAILED"
+              FAILURES=$((FAILURES + 1))
+            fi
+            
+            if [ "$FAILURES" -gt 0 ]; then
+              echo "Code quality check failed with $FAILURES metric(s) not meeting goals."
+              exit 1
+            fi
+          else
+            echo "No metrics file found. Skipping goal check."
+          fi
+      
+      - name: Generate code quality badge
+        run: |
+          if [ -f "metrics/ci_report.json" ]; then
+            # Extract metrics
+            TOTAL_WARNINGS=$(grep -o '"total_warnings":[0-9]*' metrics/ci_report.json | cut -d':' -f2)
+            TEST_COVERAGE=$(grep -o '"test_coverage":[0-9.]*' metrics/ci_report.json | cut -d':' -f2)
+            
+            # Create badges directory
+            mkdir -p .github/badges
+            
+            # Generate warnings badge
+            echo "Generating warnings badge: $TOTAL_WARNINGS warnings"
+            if [ "$TOTAL_WARNINGS" -lt 100 ]; then
+              COLOR="green"
+            elif [ "$TOTAL_WARNINGS" -lt 200 ]; then
+              COLOR="yellow"
+            else
+              COLOR="red"
+            fi
+            curl -o .github/badges/warnings.svg "https://img.shields.io/badge/warnings-$TOTAL_WARNINGS-$COLOR"
+            
+            # Generate coverage badge
+            echo "Generating coverage badge: $TEST_COVERAGE%"
+            if (( $(echo "$TEST_COVERAGE >= 80" | bc -l) )); then
+              COLOR="green"
+            elif (( $(echo "$TEST_COVERAGE >= 60" | bc -l) )); then
+              COLOR="yellow"
+            else
+              COLOR="red"
+            fi
+            curl -o .github/badges/coverage.svg "https://img.shields.io/badge/coverage-$TEST_COVERAGE%25-$COLOR"
+          fi
+      
+      - name: Commit badges
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          if [ -d ".github/badges" ]; then
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+            git add .github/badges/*.svg
+            git commit -m "Update code quality badges" || echo "No changes to commit"
+            git push
+          fi
+
+  code-quality-report:
+    name: Code Quality Report
+    needs: code-quality
+    if: github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download code quality artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: code-quality-report
+          path: metrics
+      
+      - name: Create report issue
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            
+            // Read the report
+            let reportContent = '';
+            try {
+              reportContent = fs.readFileSync('metrics/code_quality_report.md', 'utf8');
+            } catch (error) {
+              console.log('Error reading report file:', error);
+              reportContent = 'Error reading report file.';
+            }
+            
+            // Create the issue
+            const issueTitle = 'Weekly Code Quality Report - ' + new Date().toISOString().split('T')[0];
+            const issueBody = `# Weekly Code Quality Report\n\n${reportContent}\n\n[View detailed charts](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`;
+            
+            try {
+              const issue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: issueTitle,
+                body: issueBody,
+                labels: ['code-quality', 'report']
+              });
+              
+              console.log(`Issue created: ${issue.data.html_url}`);
+            } catch (error) {
+              console.log('Error creating issue:', error);
+            }

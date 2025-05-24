@@ -8,8 +8,7 @@ use std::sync::Arc;
 use tracing::{debug, error, info};
 
 use super::types::{
-    InputFormat, ModelFilter, ModelMetadata, ModelPerformance, ModelStatus, ModelType,
-    ModelVersionInfo, OutputFormat, RegistryError,
+    ModelFilter, ModelMetadata, ModelStatus, ModelType, RegistryError,
 };
 
 /// Thread-safe in-memory storage for model metadata

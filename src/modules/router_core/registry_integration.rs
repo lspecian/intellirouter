@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 use crate::modules::model_registry::{
     ModelFilter, ModelMetadata, ModelRegistry, ModelStatus, RegistryError,
@@ -195,6 +195,45 @@ impl RegistryIntegration {
             .update_model_status(model_id, status)
             .map_err(|e| RouterError::RegistryError(e))
     }
+
+    /// Validate registry integration
+    pub async fn validate(&self) -> Result<(), RouterError> {
+        debug!("Validating registry integration");
+
+        // Check if the registry is initialized
+        let models = self.registry.list_models();
+        if models.is_empty() {
+            return Err(RouterError::RegistryError(RegistryError::Other(
+                "Model registry is empty".to_string(),
+            )));
+        }
+
+        // Check if there are any available models
+        let available_models = models.iter().filter(|m| m.status.is_available()).count();
+        if available_models == 0 {
+            return Err(RouterError::NoSuitableModel(
+                "No available models found in registry".to_string(),
+            ));
+        }
+
+        // Check if we can connect to at least one model
+        let mut connection_success = false;
+        for model in models.iter().filter(|m| m.status.is_available()).take(3) {
+            if let Some(connector) = self.registry.get_connector(&model.id) {
+                // Just check if we can get the connector, don't actually make a request
+                connection_success = true;
+                break;
+            }
+        }
+
+        if !connection_success {
+            return Err(RouterError::ConnectorError(
+                "Could not connect to any available models".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -265,6 +304,43 @@ mod tests {
             );
         } else {
             panic!("Expected providers to be an object");
+        }
+
+        #[tokio::test]
+        async fn test_validate() {
+            // Create a registry with test models
+            let registry = Arc::new(ModelRegistry::new());
+
+            // Add test models
+            registry
+                .register_model(create_test_model("model1", "provider1"))
+                .unwrap();
+            registry
+                .register_model(create_test_model("model2", "provider1"))
+                .unwrap();
+
+            // Create registry integration
+            let integration = RegistryIntegration::new(registry);
+
+            // Test validation with available models
+            let result = integration.validate().await;
+            assert!(result.is_ok());
+
+            // Test validation with empty registry
+            let empty_registry = Arc::new(ModelRegistry::new());
+            let integration = RegistryIntegration::new(empty_registry);
+            let result = integration.validate().await;
+            assert!(result.is_err());
+
+            // Test validation with unavailable models
+            let registry = Arc::new(ModelRegistry::new());
+            let mut unavailable_model = create_test_model("model3", "provider2");
+            unavailable_model.status = ModelStatus::Unavailable;
+            registry.register_model(unavailable_model).unwrap();
+
+            let integration = RegistryIntegration::new(registry);
+            let result = integration.validate().await;
+            assert!(result.is_err());
         }
     }
 

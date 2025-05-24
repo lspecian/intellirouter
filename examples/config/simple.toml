@@ -1,0 +1,151 @@
+# Simple Configuration Example for IntelliRouter
+# This file demonstrates a basic configuration for IntelliRouter with comments explaining each setting
+
+# Environment setting (development, testing, production)
+# This determines which environment-specific settings to use
+environment = "development"
+
+# Server configuration
+# These settings control the HTTP server that handles API requests
+[server]
+# The host address to bind to (use 0.0.0.0 to listen on all interfaces)
+host = "127.0.0.1"
+# The port to listen on
+port = 8080
+# Maximum number of concurrent connections
+max_connections = 1000
+# Request timeout in seconds
+request_timeout_secs = 30
+# Whether to enable CORS (Cross-Origin Resource Sharing)
+cors_enabled = true
+# Allowed origins for CORS requests (use ["*"] to allow all origins)
+cors_allowed_origins = ["http://localhost:3000"]
+
+# Model registry configuration
+# These settings control how IntelliRouter manages LLM models
+[model_registry]
+# The default provider to use when none is specified
+default_provider = "openai"
+# How long to cache model information (in seconds)
+cache_ttl_secs = 3600
+
+# LLM provider configuration
+# You can configure multiple providers
+[[model_registry.providers]]
+# Provider name (used for routing)
+name = "openai"
+# Environment variable name that contains the API key
+api_key_env = "OPENAI_API_KEY"
+# API endpoint URL
+endpoint = "https://api.openai.com/v1"
+# Default model to use for this provider
+default_model = "gpt-4o"
+# List of available models from this provider
+available_models = ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
+# Request timeout in seconds
+timeout_secs = 60
+# Maximum number of retries for failed requests
+max_retries = 3
+# Provider-specific settings
+settings = {}
+
+# Another provider example
+[[model_registry.providers]]
+name = "anthropic"
+api_key_env = "ANTHROPIC_API_KEY"
+endpoint = "https://api.anthropic.com/v1"
+default_model = "claude-3-opus-20240229"
+available_models = ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"]
+timeout_secs = 60
+max_retries = 3
+settings = {}
+
+# Router configuration
+# These settings control how requests are routed to different models
+[router]
+# The default routing strategy to use
+default_strategy = "cost-optimized"
+# Available routing strategies
+available_strategies = ["cost-optimized", "performance-optimized", "round-robin", "fallback"]
+# Custom routing rules (empty in this example)
+rules = {}
+
+# Memory configuration
+# These settings control conversation history and memory features
+[memory]
+# Type of memory backend to use (memory, redis, postgres)
+backend_type = "memory"
+# Maximum number of messages to keep in history
+max_history_length = 100
+# How long to keep history in memory (in seconds)
+history_ttl_secs = 86400  # 24 hours
+
+# Telemetry configuration
+# These settings control logging, metrics, and tracing
+[telemetry]
+# Log level (debug, info, warn, error)
+log_level = "info"
+# Whether to collect metrics
+metrics_enabled = true
+# Whether to enable distributed tracing
+tracing_enabled = true
+
+# Authentication configuration
+# These settings control API authentication
+[auth]
+# Whether to enable authentication
+auth_enabled = false
+# Authentication method (api_key, jwt)
+auth_method = "api_key"
+# JWT token expiration time in seconds
+jwt_expiration_secs = 3600  # 1 hour
+# Header name for API key authentication
+api_key_header = "X-API-Key"
+# List of valid API keys (empty in this example)
+api_keys = []
+
+# RAG (Retrieval Augmented Generation) configuration
+# These settings control the RAG features
+[rag]
+# Whether to enable RAG
+enabled = false
+# Default embedding model for document indexing
+default_embedding_model = "text-embedding-3-small"
+# Size of text chunks for indexing
+chunk_size = 1000
+# Overlap between chunks
+chunk_overlap = 200
+
+# Chain engine configuration
+# These settings control multi-step inference chains
+[chain_engine]
+# Maximum number of steps in a chain
+max_chain_length = 10
+# Maximum execution time for a chain (in seconds)
+max_execution_time_secs = 300  # 5 minutes
+# Whether to enable caching of chain results
+enable_caching = true
+# How long to cache chain results (in seconds)
+cache_ttl_secs = 3600  # 1 hour
+
+# Persona layer configuration
+# These settings control system prompts and guardrails
+[persona_layer]
+# Whether to enable the persona layer
+enabled = true
+# Default persona to use
+default_persona = "default"
+# Directory containing persona definitions
+personas_dir = "config/personas"
+
+# Plugin SDK configuration
+# These settings control the plugin system
+[plugin_sdk]
+# Whether to enable plugins
+enabled = false
+# Directory containing plugins
+plugins_dir = "plugins"
+# Allowed hosts for plugin HTTP requests
+allowed_hosts = []
+# Plugin execution timeout (in seconds)
+timeout_secs = 30

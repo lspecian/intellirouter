@@ -6,10 +6,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde_json::json;
-use tracing::{debug, error, info};
 
 use crate::modules::health::{DiagnosticsProvider, HealthCheckManager, HttpDependencyChecker};
 use crate::modules::persona_layer::manager::PersonaManager;
+use crate::modules::persona_layer::Guardrail;
 
 /// Persona Layer diagnostics provider
 #[derive(Debug)]
@@ -45,20 +45,30 @@ impl DiagnosticsProvider for PersonaLayerDiagnosticsProvider {
         let inactive_personas = 0;
         diagnostics.insert("inactive_personas".to_string(), json!(inactive_personas));
 
-        // Stub implementation for guardrail stats
-        // TODO: Implement list_guardrails in PersonaManager
-        diagnostics.insert("total_guardrails".to_string(), json!(0));
-        diagnostics.insert("active_guardrails".to_string(), json!(0));
+        // Get guardrail stats
+        let guardrails = self.persona_manager.list_guardrails();
+        diagnostics.insert("total_guardrails".to_string(), json!(guardrails.len()));
 
-        // Stub implementation for usage statistics
-        // TODO: Implement get_usage_stats in PersonaManager
-        diagnostics.insert("total_requests".to_string(), json!(0));
+        // Assuming all guardrails are active
+        diagnostics.insert("active_guardrails".to_string(), json!(guardrails.len()));
 
-        // Stub implementation for guardrail blocks
-        // TODO: Implement get_usage_stats in PersonaManager
-        diagnostics.insert("guardrail_blocks".to_string(), json!(0));
+        // Get usage statistics
+        let usage_stats = self.persona_manager.get_usage_stats();
 
-        diagnostics.insert("average_response_time_ms".to_string(), json!(0));
+        // Extract specific metrics from usage stats
+        let total_requests = usage_stats.get("total_requests").cloned().unwrap_or(0);
+        let guardrail_blocks = usage_stats.get("guardrail_blocks").cloned().unwrap_or(0);
+        let avg_response_time = usage_stats
+            .get("average_response_time_ms")
+            .cloned()
+            .unwrap_or(0);
+
+        diagnostics.insert("total_requests".to_string(), json!(total_requests));
+        diagnostics.insert("guardrail_blocks".to_string(), json!(guardrail_blocks));
+        diagnostics.insert(
+            "average_response_time_ms".to_string(),
+            json!(avg_response_time),
+        );
 
         // More detailed diagnostics for higher verbosity levels
         if verbosity >= 2 {
@@ -80,34 +90,42 @@ impl DiagnosticsProvider for PersonaLayerDiagnosticsProvider {
             diagnostics.insert("personas".to_string(), json!(persona_details));
 
             // Add guardrail details
-            // TODO: Implement list_guardrails in PersonaManager
-            let guardrail_details: Vec<serde_json::Value> = Vec::new();
+            let guardrail_details: Vec<serde_json::Value> = guardrails
+                .iter()
+                .map(|(persona_id, persona_name, guardrail)| {
+                    let guardrail_type = match guardrail {
+                        Guardrail::ResponseFormat { .. } => "response_format",
+                        Guardrail::ContentFilter { .. } => "content_filter",
+                        Guardrail::TopicRestriction { .. } => "topic_restriction",
+                    };
+
+                    json!({
+                        "persona_id": persona_id,
+                        "persona_name": persona_name,
+                        "type": guardrail_type,
+                        "active": true, // Assuming all guardrails are active
+                    })
+                })
+                .collect();
+
             diagnostics.insert("guardrails".to_string(), json!(guardrail_details));
         }
 
         // Even more detailed diagnostics for highest verbosity level
         if verbosity >= 3 {
-            // Stub implementation for recent persona usage
-            // TODO: Implement get_recent_persona_usage in PersonaManager
-            let usage_details: Vec<serde_json::Value> = Vec::new();
+            // Get recent persona usage
+            let usage_details = self.persona_manager.get_recent_persona_usage();
             diagnostics.insert("recent_usage".to_string(), json!(usage_details));
 
-            // Stub implementation for recent guardrail blocks
-            // TODO: Implement get_recent_guardrail_blocks in PersonaManager
-            let block_details: Vec<serde_json::Value> = Vec::new();
-
+            // Get recent guardrail blocks
+            let block_details = self.persona_manager.get_recent_guardrail_blocks();
             diagnostics.insert("recent_blocks".to_string(), json!(block_details));
 
-            // Stub implementation for performance metrics
-            // TODO: Implement get_performance_metrics in PersonaManager
+            // Get performance metrics
+            let performance_metrics = self.persona_manager.get_performance_metrics();
             diagnostics.insert(
                 "performance_metrics".to_string(),
-                json!({
-                    "average_prompt_tokens": 0,
-                    "average_completion_tokens": 0,
-                    "average_guardrail_check_time_ms": 0,
-                    "average_persona_application_time_ms": 0,
-                }),
+                json!(performance_metrics),
             );
         }
 

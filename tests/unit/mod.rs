@@ -1,5 +1,3 @@
-//! Unit Tests
-//!
-//! This module contains unit tests for the IntelliRouter components.
+// Unit tests for IntelliRouter modules
 
-pub mod router;
+pub mod modules;

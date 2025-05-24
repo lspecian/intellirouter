@@ -115,7 +115,7 @@ impl MessageContent {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
 

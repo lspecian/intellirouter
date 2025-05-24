@@ -4,14 +4,13 @@
 //! allowing requests to be routed to the appropriate model backend.
 
 use futures::StreamExt;
-use std::collections::HashSet;
 use std::sync::Arc;
-use tracing::{debug, error, info};
+use tracing::debug;
 
 use crate::modules::model_registry::connectors::{ChatCompletionRequest, ChatCompletionResponse};
 use crate::modules::model_registry::storage::ModelRegistry;
 use crate::modules::router_core::{
-    ErrorCategory, Router, RouterError, RouterImpl, RoutingContext, RoutingRequest, RoutingResponse,
+    Router, RouterError, RouterImpl, RoutingContext, RoutingRequest,
 };
 
 /// Service for routing chat completion requests
@@ -33,8 +32,8 @@ impl RouterService {
     ) -> Result<ChatCompletionResponse, RouterError> {
         debug!("Routing request for model: {}", request.model);
 
-        // Create routing context
-        let context = RoutingContext::new(request.clone());
+        // Create routing context (not used but kept for future reference)
+        let _context = RoutingContext::new(request.clone());
 
         // Create routing request
         let routing_request =
@@ -57,8 +56,8 @@ impl RouterService {
     > {
         debug!("Routing streaming request for model: {}", request.model);
 
-        // Create routing context
-        let context = RoutingContext::new(request.clone());
+        // Create routing context (not used but kept for future reference)
+        let _context = RoutingContext::new(request.clone());
 
         // Create routing request
         let routing_request =
@@ -99,11 +98,13 @@ impl RouterService {
 }
 
 /// Create a router service with a mock backend for testing
+///
+/// This function is only available when the `test-utils` feature is enabled.
+#[cfg(feature = "test-utils")]
 pub fn create_mock_router_service() -> RouterService {
     use crate::modules::llm_proxy::MockModelBackend;
     use crate::modules::model_registry::{ModelMetadata, ModelStatus, ModelType};
     use crate::modules::router_core::{RouterConfig, RoutingStrategy};
-    use std::collections::HashMap;
 
     // Create a model registry
     let registry = Arc::new(ModelRegistry::new());
@@ -169,12 +170,14 @@ pub fn create_mock_router_service() -> RouterService {
 }
 
 /// Create a router service with a custom configuration for testing
+///
+/// This function is only available when the `test-utils` feature is enabled.
+#[cfg(feature = "test-utils")]
 pub fn create_mock_router_service_with_config(
     router_config: crate::modules::router_core::RouterConfig,
 ) -> RouterService {
     use crate::modules::llm_proxy::MockModelBackend;
     use crate::modules::model_registry::{ModelMetadata, ModelStatus, ModelType};
-    use std::collections::HashMap;
 
     // Create a model registry
     let registry = Arc::new(ModelRegistry::new());
@@ -217,11 +220,13 @@ pub fn create_mock_router_service_with_config(
 }
 
 /// Create a router service with error simulation for testing
+///
+/// This function is only available when the `test-utils` feature is enabled.
+#[cfg(feature = "test-utils")]
 pub fn create_mock_router_service_with_errors() -> RouterService {
     use crate::modules::llm_proxy::MockModelBackend;
     use crate::modules::model_registry::{ModelMetadata, ModelStatus, ModelType};
     use crate::modules::router_core::{RouterConfig, RoutingStrategy};
-    use std::collections::HashMap;
 
     // Create a model registry
     let registry = Arc::new(ModelRegistry::new());

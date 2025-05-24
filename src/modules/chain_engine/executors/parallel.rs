@@ -3,14 +3,11 @@
 //! This module provides an executor for parallel steps.
 
 use async_trait::async_trait;
-use futures::future::{join_all, try_join_all};
 use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
-use tokio::sync::Mutex;
+use std::time::Instant;
 
 use crate::modules::chain_engine::context::{ChainContext, StepResult};
-use crate::modules::chain_engine::definition::{Chain, ChainStep};
+use crate::modules::chain_engine::definition::ChainStep;
 use crate::modules::chain_engine::error::{ChainError, ChainResult};
 use crate::modules::chain_engine::executors::StepExecutor;
 

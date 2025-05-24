@@ -1,7 +1,6 @@
 use axum::{
     extract::{Path, State},
     http::StatusCode,
-    routing::{delete, get, post},
     Json, Router,
 };
 use chrono::Utc;
@@ -43,7 +42,7 @@ pub struct AddPermissionRequest {
     pub permission: String,
 }
 
-pub fn create_routes(auth_manager: Arc<AuthManager>, rbac_manager: Arc<RbacManager>) -> Router {
+pub fn create_routes(_auth_manager: Arc<AuthManager>, _rbac_manager: Arc<RbacManager>) -> Router {
     // Temporarily disable routes to fix compilation issues
     Router::new()
 }

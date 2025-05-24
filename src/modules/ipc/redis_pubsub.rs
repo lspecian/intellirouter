@@ -6,16 +6,13 @@
 use async_trait::async_trait;
 use futures::{Stream, StreamExt};
 use redis::aio::ConnectionManager;
-use redis::AsyncCommands;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio_stream::wrappers::ReceiverStream;
 
 use crate::modules::ipc::{IpcError, IpcResult};
-use std::future::Future;
 
 /// Channel naming convention for Redis pub/sub channels
 ///

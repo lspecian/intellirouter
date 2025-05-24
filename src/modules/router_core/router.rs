@@ -3,30 +3,26 @@
 //! This module contains the concrete implementation of the Router trait
 //! that leverages the strategy interfaces to make routing decisions.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::num::NonZeroUsize;
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
 
+use crate::modules::common::error_handling::{ErrorHandler, TimeoutConfig};
 use crate::modules::router_core::config::StrategyConfig;
 use crate::modules::router_core::RegistryIntegration;
 
 use lru::LruCache;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info, warn};
 
 use crate::modules::model_registry::{
-    connectors::{ChatCompletionRequest, ModelConnector},
-    storage::ModelRegistry,
-    ModelMetadata,
+    connectors::ModelConnector, storage::ModelRegistry, ModelMetadata,
 };
 
 use super::{
-    retry::{
-        CircuitBreakerConfig, DegradedServiceHandler, DegradedServiceMode, RetryManager,
-        RetryPolicy,
-    },
-    strategies::{PriorityConfig, PriorityStrategy, RoundRobinConfig, RoundRobinStrategy},
+    retry::{DegradedServiceHandler, RetryPolicy},
+    strategies::{ContentBasedConfig, ContentBasedStrategy, RoundRobinConfig, RoundRobinStrategy},
     BaseStrategy, Router, RouterConfig, RouterError, RoutingMetadata, RoutingRequest,
     RoutingResponse, RoutingStrategy, RoutingStrategyTrait,
 };
@@ -48,8 +44,8 @@ pub struct RouterImpl {
     metrics: Mutex<HashMap<String, serde_json::Value>>,
     /// Routing decision cache
     cache: Mutex<LruCache<String, ModelMetadata>>,
-    /// Retry manager
-    retry_manager: RetryManager,
+    /// Error handler for retries, timeouts, and circuit breaking
+    error_handler: ErrorHandler,
     /// Degraded service handler
     degraded_service_handler: DegradedServiceHandler,
 }
@@ -57,10 +53,18 @@ pub struct RouterImpl {
 impl RouterImpl {
     /// Create a new router
     pub fn new(config: RouterConfig, registry: Arc<ModelRegistry>) -> Result<Self, RouterError> {
-        let retry_manager = RetryManager::new(
+        // Create error handler with appropriate configuration
+        let timeout_config = TimeoutConfig {
+            default_timeout_ms: config.global_timeout_ms,
+            critical_timeout_ms: config.global_timeout_ms / 2,
+            non_critical_timeout_ms: config.global_timeout_ms * 2,
+        };
+
+        let error_handler = ErrorHandler::new(
             config.retry_policy.clone(),
             config.circuit_breaker.clone(),
             config.retryable_errors.clone(),
+            timeout_config,
         );
 
         let degraded_service_handler =
@@ -82,7 +86,7 @@ impl RouterImpl {
             cache: Mutex::new(LruCache::new(
                 NonZeroUsize::new(config.max_cache_size).unwrap(),
             )),
-            retry_manager,
+            error_handler,
             degraded_service_handler,
         };
 
@@ -133,14 +137,11 @@ impl RouterImpl {
                 Ok(Box::new(RoundRobinStrategy::new(config)))
             }
             RoutingStrategy::ContentBased => {
-                let config = PriorityConfig {
-                    base: base_config,
-                    model_priorities: HashMap::new(),
-                    provider_priorities: HashMap::new(),
-                    type_priorities: HashMap::new(),
-                    default_priority: 0,
-                };
-                Ok(Box::new(PriorityStrategy::new(config)))
+                let content_config = ContentBasedConfig::default();
+                Ok(Box::new(ContentBasedStrategy::new(
+                    base_config,
+                    content_config,
+                )))
             }
             // For now, we'll use the base strategy for other strategy types
             // In a real implementation, we would implement all strategy types
@@ -157,7 +158,7 @@ impl RouterImpl {
         }
     }
 
-    /// Try a strategy with retries
+    /// Try a strategy with retries and timeout
     async fn try_strategy_with_retries(
         &self,
         strategy: &dyn RoutingStrategyTrait,
@@ -166,25 +167,42 @@ impl RouterImpl {
         is_fallback: bool,
     ) -> Result<RoutingResponse, RouterError> {
         let strategy_name = strategy.name().to_string();
+        let context = format!("strategy_{}", strategy_name);
 
-        // Use the retry manager to execute the strategy
+        // Calculate timeout based on request parameters
+        let timeout_ms = if let Some(max_tokens) = request.context.request.max_tokens {
+            // Adjust timeout based on max_tokens (more tokens = more time)
+            (max_tokens as u64).min(1000) * 100 // 100ms per token, max 100 seconds
+        } else {
+            self.config.global_timeout_ms
+        };
+
+        // Use the error handler to execute the strategy with retries and timeout
         let response = self
-            .retry_manager
-            .execute(
-                || async {
-                    // Select model using strategy
-                    let model = strategy.select_model(request, &*self.registry).await?;
+            .error_handler
+            .execute_with_retry_and_timeout(
+                || {
+                    let strategy = strategy;
+                    let request = request;
+                    let start_time = start_time;
+                    let is_fallback = is_fallback;
 
-                    // Create metadata
-                    let metadata =
-                        strategy.get_routing_metadata(&model, start_time, 1, is_fallback);
+                    async move {
+                        // Select model using strategy
+                        let model = strategy.select_model(request, &*self.registry).await?;
 
-                    // Create response
-                    let response = self.create_response(request, model, metadata).await?;
+                        // Create metadata
+                        let metadata =
+                            strategy.get_routing_metadata(&model, start_time, 1, is_fallback);
 
-                    Ok::<RoutingResponse, RouterError>(response)
+                        // Create response
+                        let response = self.create_response(request, model, metadata).await?;
+
+                        Ok::<RoutingResponse, RouterError>(response)
+                    }
                 },
-                &format!("strategy {}", strategy_name),
+                &context,
+                Some(timeout_ms),
             )
             .await?;
 
@@ -212,11 +230,36 @@ impl RouterImpl {
             RouterError::NoSuitableModel(format!("No connector found for model: {}", model.id))
         })?;
 
-        // Send the request to the model
-        let response = connector
-            .generate(request.context.request.clone())
-            .await
-            .map_err(|e| RouterError::ConnectorError(e.to_string()))?;
+        // Calculate an appropriate timeout for this model
+        let timeout_ms = if let Some(max_tokens) = request.context.request.max_tokens {
+            // Adjust timeout based on max_tokens and model's generation speed
+            let tokens_per_second = model
+                .capabilities
+                .performance
+                .tokens_per_second
+                .unwrap_or(10.0);
+            let estimated_time = (max_tokens as f64 / tokens_per_second as f64 * 1000.0) as u64;
+            // Add a buffer and cap at reasonable limits
+            (estimated_time + 5000).min(120000).max(5000)
+        } else {
+            self.config.global_timeout_ms
+        };
+
+        // Use error handler to execute with timeout
+        let context = format!("model_request:{}", model.id);
+        let response = self
+            .error_handler
+            .execute_with_timeout(
+                || async {
+                    connector
+                        .generate(request.context.request.clone())
+                        .await
+                        .map_err(|e| RouterError::ConnectorError(e.to_string()))
+                },
+                &context,
+                Some(timeout_ms),
+            )
+            .await?;
 
         // Create routing response
         Ok(RoutingResponse { response, metadata })
@@ -338,11 +381,18 @@ impl Router for RouterImpl {
             self.fallback_strategies.push(strategy);
         }
 
-        // Update retry manager
-        self.retry_manager = RetryManager::new(
+        // Update error handler
+        let timeout_config = TimeoutConfig {
+            default_timeout_ms: config.global_timeout_ms,
+            critical_timeout_ms: config.global_timeout_ms / 2,
+            non_critical_timeout_ms: config.global_timeout_ms * 2,
+        };
+
+        self.error_handler = ErrorHandler::new(
             config.retry_policy.clone(),
             config.circuit_breaker.clone(),
             config.retryable_errors.clone(),
+            timeout_config,
         );
 
         // Update degraded service handler
@@ -362,6 +412,9 @@ impl Router for RouterImpl {
     async fn route(&self, request: RoutingRequest) -> Result<RoutingResponse, RouterError> {
         // Start timing
         let start_time = Instant::now();
+
+        // Validate service health before handling request
+        self.validate_service_health().await?;
 
         // Check cache if enabled
         if self.config.cache_routing_decisions {
@@ -459,9 +512,55 @@ impl Router for RouterImpl {
     fn get_registry(&self) -> Arc<ModelRegistry> {
         self.registry.clone()
     }
+
+    /// Validate service health before handling requests
+    async fn validate_service_health(&self) -> Result<(), RouterError> {
+        debug!("Validating service health before handling request");
+
+        // Check if the model registry is available
+        if self.registry.list_models().is_empty() {
+            return Err(RouterError::RegistryError(
+                crate::modules::model_registry::RegistryError::NotInitialized(
+                    "Model registry is not initialized or empty".to_string(),
+                ),
+            ));
+        }
+
+        // Check if there are any available models
+        let available_models = self
+            .registry
+            .list_models()
+            .iter()
+            .filter(|m| m.status.is_available())
+            .count();
+        if available_models == 0 {
+            return Err(RouterError::NoSuitableModel(
+                "No available models found in registry".to_string(),
+            ));
+        }
+
+        // Check circuit breaker state
+        if let RetryPolicy::None = self.config.retry_policy {
+            // If no retry policy, we don't need to check circuit breaker
+        } else {
+            // For other retry policies, check if the circuit breaker is open
+            if !self.error_handler.allow_request("service_health_check") {
+                return Err(RouterError::Other(
+                    "Circuit breaker is open, service is degraded".to_string(),
+                ));
+            }
+        }
+
+        // Validate registry integration
+        if let Err(e) = self.registry_integration.validate().await {
+            return Err(e);
+        }
+
+        Ok(())
+    }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use crate::modules::model_registry::{
@@ -623,5 +722,39 @@ mod tests {
         } else {
             panic!("Expected strategy_usage to be an object");
         }
+    }
+
+    #[tokio::test]
+    async fn test_validate_service_health() {
+        // Create a mock registry with test models
+        let registry = Arc::new(MockModelRegistry::new());
+
+        // Add test models
+        registry.add_model(create_test_model("model1", "provider1"));
+        registry.add_model(create_test_model("model2", "provider1"));
+
+        // Create router with the mock registry
+        let config = RouterConfig::default();
+        let router = RouterImpl::new(config, registry).unwrap();
+
+        // Test validation with available models
+        let result = router.validate_service_health().await;
+        assert!(result.is_ok());
+
+        // Test validation with no models
+        let empty_registry = Arc::new(MockModelRegistry::new());
+        let router = RouterImpl::new(RouterConfig::default(), empty_registry).unwrap();
+        let result = router.validate_service_health().await;
+        assert!(result.is_err());
+
+        // Test validation with unavailable models
+        let registry = Arc::new(MockModelRegistry::new());
+        let mut unavailable_model = create_test_model("model3", "provider2");
+        unavailable_model.set_status(ModelStatus::Unavailable);
+        registry.add_model(unavailable_model);
+
+        let router = RouterImpl::new(RouterConfig::default(), registry).unwrap();
+        let result = router.validate_service_health().await;
+        assert!(result.is_err());
     }
 }

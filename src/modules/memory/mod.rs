@@ -17,8 +17,6 @@ pub use manager::MemoryManager;
 pub use redis::RedisBackend;
 pub use types::{Conversation, MemoryError, Message};
 
-use chrono::Utc;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 // Provide backward-compatible functions
@@ -72,7 +70,7 @@ pub fn load_conversation(_id: &str) -> Result<types::Conversation, String> {
     Err("Use MemoryManager for async storage operations".to_string())
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "production")))]
 mod tests {
     use super::*;
     use std::sync::Arc;

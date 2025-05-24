@@ -10,8 +10,7 @@ pub mod manager;
 pub mod registry;
 pub mod traits;
 
-#[cfg(test)]
-mod tests;
+// Tests moved to tests/unit/modules/plugin_sdk/
 
 // Re-export types for easier access
 pub use examples::register_example_plugins;

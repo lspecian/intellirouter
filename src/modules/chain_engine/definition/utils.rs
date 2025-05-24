@@ -4,7 +4,7 @@
 
 /// Module for serializing/deserializing Duration
 pub mod duration_serde {
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::{Deserialize, Deserializer, Serializer};
     use std::time::Duration;
 
     pub fn serialize<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>

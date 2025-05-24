@@ -1,20 +1,9 @@
 use axum::{
-    extract::State,
-    http::Method,
     middleware::from_fn_with_state,
-    response::{sse::Event, sse::Sse, IntoResponse},
-    routing::{get, post, Router},
-    Json,
+    routing::{post, Router},
 };
-use futures::stream::{self, Stream};
-use futures::StreamExt;
-use std::convert::Infallible;
 use std::net::SocketAddr;
-use std::pin::Pin;
 use std::sync::Arc;
-use std::time::Duration;
-use tokio_stream::StreamExt as TokioStreamExt;
-use tracing::{debug, error};
 
 use crate::modules::telemetry::{
     create_cost_calculator, init_telemetry, telemetry_middleware, LlmCallMetrics, RoutingMetrics,
@@ -24,10 +13,6 @@ use crate::modules::telemetry::{
 // Use the AppState from server.rs
 pub use super::server::AppState;
 
-use super::dto::{ApiError, ChatCompletionRequest, ChatCompletionResponse};
-use super::service::ChatCompletionService;
-use super::validation;
-use crate::modules::router_core::RouterError;
 
 /// Create a router with telemetry middleware
 pub fn create_router_with_telemetry(

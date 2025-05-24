@@ -1,0 +1,254 @@
+{{#*inline "content"}}
+<div class="dashboard-overview">
+    <!-- Project Health Overview -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Project Health Overview</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="health-chart-container">
+                                <canvas id="healthChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="health-scores">
+                                <div class="health-score-item">
+                                    <div class="health-score-label">Overall Health</div>
+                                    <div class="progress mb-2" style="height: 25px;">
+                                        <div class="progress-bar {{project_health_class}}" role="progressbar"
+                                            style="width: {{project_health.overall_health}}%;"
+                                            aria-valuenow="{{project_health.overall_health}}" aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{project_health.overall_health}}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="health-score-item">
+                                    <div class="health-score-label">Code Quality</div>
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div class="progress-bar {{code_quality_class}}" role="progressbar"
+                                            style="width: {{project_health.code_quality_score}}%;"
+                                            aria-valuenow="{{project_health.code_quality_score}}" aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{project_health.code_quality_score}}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="health-score-item">
+                                    <div class="health-score-label">Performance</div>
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div class="progress-bar {{performance_class}}" role="progressbar"
+                                            style="width: {{project_health.performance_score}}%;"
+                                            aria-valuenow="{{project_health.performance_score}}" aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{project_health.performance_score}}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="health-score-item">
+                                    <div class="health-score-label">Security</div>
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div class="progress-bar {{security_class}}" role="progressbar"
+                                            style="width: {{project_health.security_score}}%;"
+                                            aria-valuenow="{{project_health.security_score}}" aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{project_health.security_score}}%
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="health-score-item">
+                                    <div class="health-score-label">Documentation</div>
+                                    <div class="progress mb-2" style="height: 20px;">
+                                        <div class="progress-bar {{documentation_class}}" role="progressbar"
+                                            style="width: {{project_health.documentation_score}}%;"
+                                            aria-valuenow="{{project_health.documentation_score}}" aria-valuemin="0"
+                                            aria-valuemax="100">
+                                            {{project_health.documentation_score}}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Code Warnings</h5>
+                    <div
+                        class="metric-value {{#if (gt code_quality.total_warnings 50)}}text-danger{{else}}text-success{{/if}}">
+                        {{code_quality.total_warnings}}
+                    </div>
+                    <div class="metric-label">Total Warnings</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Test Coverage</h5>
+                    <div
+                        class="metric-value {{#if (lt code_quality.test_coverage 70)}}text-warning{{else}}text-success{{/if}}">
+                        {{code_quality.test_coverage}}%
+                    </div>
+                    <div class="metric-label">Code Coverage</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Security Issues</h5>
+                    <div
+                        class="metric-value {{#if (gt security.total_issues 0)}}text-danger{{else}}text-success{{/if}}">
+                        {{security.total_issues}}
+                    </div>
+                    <div class="metric-label">Total Issues</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h5 class="card-title">Doc Coverage</h5>
+                    <div
+                        class="metric-value {{#if (lt documentation.overall_coverage 70)}}text-warning{{else}}text-success{{/if}}">
+                        {{documentation.overall_coverage}}%
+                    </div>
+                    <div class="metric-label">Documentation</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Recommendations -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Top Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Priority</th>
+                                    <th>Recommendation</th>
+                                    <th>Category</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {{#each recommendations}}
+                                <tr>
+                                    <td>{{priority}}</td>
+                                    <td>
+                                        <strong>{{title}}</strong>
+                                        <div class="small text-muted">{{description}}</div>
+                                    </td>
+                                    <td>{{category}}</td>
+                                    <td>
+                                        <span class="badge {{status_class}}">{{status.message}}</span>
+                                    </td>
+                                </tr>
+                                {{/each}}
+                                {{#unless recommendations}}
+                                <tr>
+                                    <td colspan="4" class="text-center">No recommendations available</td>
+                                </tr>
+                                {{/unless}}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="activity-timeline">
+                        {{#each activities}}
+                        <div class="activity-item">
+                            <div class="activity-icon bg-{{type_class}}">
+                                <i class="bi bi-{{icon}}"></i>
+                            </div>
+                            <div class="activity-content">
+                                <div class="activity-title">{{title}}</div>
+                                <div class="activity-text">{{description}}</div>
+                                <div class="activity-time">{{timestamp}}</div>
+                            </div>
+                        </div>
+                        {{/each}}
+                        {{#unless activities}}
+                        <div class="text-center">No recent activity</div>
+                        {{/unless}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Health trends chart
+        const healthCtx = document.getElementById('healthChart').getContext('2d');
+        const healthChart = new Chart(healthCtx, {
+            type: 'line',
+            data: {
+                labels: {{{ json project_health.health_trends.data_points.map(dp => dp.timestamp) }}}.map(ts => moment(ts).format('MMM D')),
+        datasets: [{
+            label: 'Overall Health',
+            data: {{{ json project_health.health_trends.data_points.map(dp => dp.value) }}},
+        borderColor: '#0d6efd',
+        backgroundColor: 'rgba(13, 110, 253, 0.1)',
+        tension: 0.4,
+        fill: true
+                }]
+            },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'Project Health Trend'
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                    display: true,
+                    text: 'Health Score (%)'
+                }
+            }
+        }
+    }
+        });
+    });
+</script>
+{{/inline}}

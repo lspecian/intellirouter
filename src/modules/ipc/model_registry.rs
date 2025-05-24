@@ -4,9 +4,8 @@
 //! ensuring a clear separation between interface and transport logic.
 
 use async_trait::async_trait;
-use std::sync::Arc;
 
-use crate::modules::ipc::{IpcError, IpcResult};
+use crate::modules::ipc::IpcResult;
 
 /// Represents metadata for a model
 #[derive(Debug, Clone)]

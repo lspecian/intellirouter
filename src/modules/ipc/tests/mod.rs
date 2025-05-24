@@ -1,6 +1,6 @@
-//! Tests for the IPC module
+//! Tests for IPC modules
 //!
-//! This module contains tests for the IPC infrastructure.
+//! This module contains tests for the IPC modules.
 
-mod redis_pubsub_tests;
-mod security_tests;
+#[cfg(test)]
+pub mod resilient_client_tests;

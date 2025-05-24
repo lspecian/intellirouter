@@ -76,6 +76,108 @@ impl RagManager {
         &self.sources
     }
 
+    /// List all sources with their types
+    ///
+    /// # Returns
+    ///
+    /// A vector of tuples containing source name, type, and metadata
+    pub fn list_sources(&self) -> Vec<(String, String, HashMap<String, String>)> {
+        self.sources
+            .iter()
+            .map(|(name, source)| {
+                let source_type = source.get_type();
+                let metadata = source.get_metadata();
+                (name.clone(), source_type, metadata)
+            })
+            .collect()
+    }
+
+    /// Get vector database statistics
+    ///
+    /// # Returns
+    ///
+    /// A map of collection names to vector counts
+    pub async fn get_vector_db_stats(&self) -> HashMap<String, usize> {
+        let mut stats = HashMap::new();
+
+        // Collect stats from sources that provide vector DB information
+        for source in self.sources.values() {
+            if let Some(vector_stats) = source.get_vector_stats().await {
+                stats.extend(vector_stats);
+            }
+        }
+
+        stats
+    }
+
+    /// Get retrieval statistics
+    ///
+    /// # Returns
+    ///
+    /// Statistics about retrieval operations
+    pub fn get_retrieval_stats(&self) -> HashMap<String, f64> {
+        let mut stats = HashMap::new();
+
+        // In a real implementation, these would be tracked during retrieve_context calls
+        stats.insert("total_retrievals".to_string(), 0.0);
+        stats.insert("successful_retrievals".to_string(), 0.0);
+        stats.insert("failed_retrievals".to_string(), 0.0);
+        stats.insert("average_retrieval_time_ms".to_string(), 0.0);
+        stats.insert("average_results_per_query".to_string(), 0.0);
+
+        stats
+    }
+
+    /// List all collections in the vector database
+    ///
+    /// # Returns
+    ///
+    /// A vector of collection details
+    pub async fn list_collections(&self) -> Vec<HashMap<String, serde_json::Value>> {
+        let mut collections = Vec::new();
+
+        // Collect collection information from sources that provide it
+        for source in self.sources.values() {
+            if let Some(source_collections) = source.get_collections().await {
+                collections.extend(source_collections);
+            }
+        }
+
+        collections
+    }
+
+    /// Get embedding model information
+    ///
+    /// # Returns
+    ///
+    /// Information about the embedding model being used
+    pub fn get_embedding_model_info(&self) -> HashMap<String, serde_json::Value> {
+        let mut info = HashMap::new();
+
+        // In a real implementation, this would be retrieved from the embedding service
+        info.insert(
+            "name".to_string(),
+            serde_json::json!("default_embedding_model"),
+        );
+        info.insert("dimension".to_string(), serde_json::json!(1536));
+        info.insert(
+            "provider".to_string(),
+            serde_json::json!("default_provider"),
+        );
+
+        info
+    }
+
+    /// Get recent queries
+    ///
+    /// # Returns
+    ///
+    /// A list of recent queries with their timestamps and results
+    pub fn get_recent_queries(&self) -> Vec<HashMap<String, serde_json::Value>> {
+        // In a real implementation, this would maintain a circular buffer of recent queries
+        Vec::new()
+    }
+
     /// Retrieve context from all sources
     ///
     /// # Arguments

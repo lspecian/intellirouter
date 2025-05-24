@@ -1,0 +1,156 @@
+# Product Requirements Document: IntelliRouter Test Restructuring
+
+**Version:** 1.0
+**Date:** May 21, 2025
+**Author:** Architecture Team
+
+## 1. Problem Statement
+
+### Current Issues with Test Structure
+
+The IntelliRouter project currently has several issues with its test structure:
+
+1. **Test code compiled with application code**: Module-specific test files like `src/modules/audit/communication_tests.rs` are part of the main codebase and get compiled into the production binary.
+2. **Custom test runner in application binary**: `src/bin/run_tests.rs` is compiled as part of the application, increasing binary size unnecessarily.
+3. **Test utilities mixed with production code**: References to `test_utils` suggest test utilities are embedded in the main codebase.
+4. **Increased binary size and compilation time**: Test code unnecessarily increases production binary size and slows down compilation.
+5. **Unclear separation of concerns**: Mixing test and production code creates maintenance challenges and makes it harder to understand the codebase.
+
+These issues are particularly problematic for a large, complex project like IntelliRouter, which serves as a router and LLM gateway. The test code should not be compiled with the application in a production environment.
+
+## 2. Project Vision
+
+To restructure the IntelliRouter test architecture to clearly separate test code from application code while maintaining test functionality and coverage. This will result in:
+
+- Smaller, more focused production binaries
+- Faster compilation times for production builds
+- Clearer separation of concerns
+- Better organization of test code
+- Improved maintainability
+
+## 3. Key Components & Features
+
+### 3.1. Test-Utils Crate
+
+- **Description**: A separate crate for test utilities that can be used by both unit and integration tests.
+- **Technical Goal**: Extract test utilities from the main codebase into a dedicated crate that is only included as a dev-dependency.
+- **User Story**: "As a developer, I want to use shared test utilities across different test files without including them in the production binary."
+- **Implementation Details**:
+  - Create `intellirouter-test-utils` crate
+  - Move common test utilities, fixtures, and mocks
+  - Configure as a dev-dependency in the main crate
+
+### 3.2. Restructured Test Directory
+
+- **Description**: A well-organized test directory structure that mirrors the source code structure.
+- **Technical Goal**: Create a logical organization for different types of tests (unit, integration, e2e).
+- **User Story**: "As a developer, I want to easily find and understand the test structure so I can add or modify tests efficiently."
+- **Implementation Details**:
+  - Create `tests/unit/` directory mirroring `src/` structure
+  - Organize existing integration tests in `tests/integration/`
+  - Add `tests/e2e/` for end-to-end tests
+  - Move test binaries to `tests/bin/`
+
+### 3.3. Module-Specific Test Migration
+
+- **Description**: Move module-specific test files from `src/modules/` to the appropriate location in the test directory.
+- **Technical Goal**: Remove test code from the main source tree while preserving test functionality.
+- **User Story**: "As a developer, I want module-specific tests to be separate from the module implementation but still easily associated with it."
+- **Implementation Details**:
+  - Move files like `src/modules/audit/communication_tests.rs` to `tests/unit/modules/audit/communication_tests.rs`
+  - Update imports to use crate paths instead of relative paths
+  - Add test module wrappers where needed
+
+### 3.4. Test Runner Migration
+
+- **Description**: Move the custom test runner from `src/bin/run_tests.rs` to `tests/bin/run_tests.rs`.
+- **Technical Goal**: Remove the test runner from the main binary while preserving its functionality.
+- **User Story**: "As a developer, I want to run custom test suites without including the test runner in the production binary."
+- **Implementation Details**:
+  - Move the file to `tests/bin/run_tests.rs`
+  - Update Cargo.toml to define it as a test-only binary
+  - Update imports to use the new test-utils crate
+
+### 3.5. Cargo Configuration Updates
+
+- **Description**: Update Cargo.toml to properly separate test code from production code.
+- **Technical Goal**: Configure the build system to only include test code when testing.
+- **User Story**: "As a build engineer, I want to ensure that test code is only compiled during testing, not in production builds."
+- **Implementation Details**:
+  - Add test-utils as a dev-dependency
+  - Configure feature flags for test utilities
+  - Define test-only binaries
+
+### 3.6. CI/CD Pipeline Updates
+
+- **Description**: Update CI/CD pipeline to work with the new test structure.
+- **Technical Goal**: Ensure that all tests continue to run correctly in the CI/CD pipeline.
+- **User Story**: "As a DevOps engineer, I want the CI/CD pipeline to run all tests correctly with the new structure."
+- **Implementation Details**:
+  - Update test scripts to use the new structure
+  - Update any test-related environment variables
+  - Ensure all test types (unit, integration, e2e) are run
+
+### 3.7. Documentation Updates
+
+- **Description**: Update documentation to reflect the new test structure.
+- **Technical Goal**: Ensure that developers understand how to run and write tests with the new structure.
+- **User Story**: "As a new developer on the project, I want clear documentation on how to run and write tests."
+- **Implementation Details**:
+  - Update TESTING.md with new structure
+  - Document how to run different test categories
+  - Provide examples of how to write tests with the new structure
+
+## 4. Technical Constraints
+
+- **Backward Compatibility**: The restructuring must not break existing tests or change their behavior.
+- **Build System**: Continue using Cargo as the build system.
+- **Test Framework**: Continue using the existing test framework (custom test runner + standard Rust tests).
+- **CI/CD Integration**: Must integrate with the existing CI/CD pipeline.
+- **Large Codebase**: The restructuring must be done carefully, considering this is a large existing codebase.
+
+## 5. Implementation Plan
+
+### Phase 1: Setup (1-2 days)
+- Create test-utils crate
+- Update workspace in root Cargo.toml
+- Create organized test directory structure
+
+### Phase 2: Migration (3-5 days)
+- Move module-specific test files
+- Move test runner
+- Extract test utilities
+
+### Phase 3: Configuration & Implementation (2-4 days)
+- Update Cargo.toml
+- Update CI/CD pipeline
+- Implement feature flags for any test utilities that must remain in the main codebase
+
+### Phase 4: Documentation & Verification (1-2 days)
+- Update documentation
+- Verify all tests still pass
+- Measure improvements in binary size and compilation time
+
+**Total estimated time**: 7-13 days
+
+## 6. Success Metrics
+
+- **Binary Size Reduction**: Measure the reduction in binary size after removing test code.
+- **Compilation Time Improvement**: Measure the improvement in compilation time for production builds.
+- **Test Coverage**: Ensure that test coverage remains the same or improves.
+- **Test Pass Rate**: All tests should continue to pass with the new structure.
+- **Developer Feedback**: Gather feedback from developers on the new test structure.
+
+## 7. Risks and Mitigations
+
+- **Risk**: Some tests may rely on being in the same module as the code they're testing.
+  - **Mitigation**: Carefully update imports and use feature flags for any test utilities that must remain in the main codebase.
+
+- **Risk**: The custom test runner may have dependencies on its current location.
+  - **Mitigation**: Thoroughly test the moved test runner to ensure it works correctly.
+
+- **Risk**: CI/CD pipeline may break with the new structure.
+  - **Mitigation**: Update and test the CI/CD pipeline in a development environment before merging changes.
+
+- **Risk**: The restructuring may take longer than expected due to the size of the codebase.
+  - **Mitigation**: Start with a small, well-defined subset of tests to validate the approach before applying it to the entire codebase.

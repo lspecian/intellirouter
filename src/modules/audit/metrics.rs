@@ -11,7 +11,7 @@ use reqwest::Client;
 use serde_json::Value;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
-use tracing::{debug, error, info, warn};
+use tracing::{info, warn};
 
 use super::report::AuditReport;
 use super::types::{AuditError, MetricDataPoint, MetricType, MetricsConfig, ServiceType};

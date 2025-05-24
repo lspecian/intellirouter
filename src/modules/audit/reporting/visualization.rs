@@ -5,16 +5,18 @@
 
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Arc;
 
 use crate::modules::audit::types::MetricDataPoint;
-use plotters::element::{Circle, EmptyElement, PathElement, Pie};
+use plotters::element::{Circle, PathElement};
 use plotters::prelude::*;
-use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use plotters::style::RGBColor;
 
-use super::topology::{SystemTopology, TopologyEdge, TopologyNode};
+// Define additional colors
+const ORANGE: RGBColor = RGBColor(255, 165, 0);
+const GRAY: RGBColor = RGBColor(128, 128, 128);
+use tracing::info;
+
+use super::topology::SystemTopology;
 use crate::modules::audit::report::AuditReport;
 use crate::modules::audit::types::{AuditError, MetricType, ServiceStatus, ServiceType};
 
@@ -120,10 +122,13 @@ impl Visualizer<SystemTopology, String> for TopologyVisualizer {
             let color = match node.status {
                 ServiceStatus::Running => &GREEN,
                 ServiceStatus::Failed => &RED,
-                ServiceStatus::NotStarted => &WHITE,
+                ServiceStatus::NotStarted => &GRAY,
                 ServiceStatus::Starting => &YELLOW,
                 ServiceStatus::ShuttingDown => &BLUE,
                 ServiceStatus::Stopped => &BLACK,
+                ServiceStatus::Active => &GREEN,
+                ServiceStatus::Inactive => &YELLOW,
+                ServiceStatus::Degraded => &ORANGE,
             };
 
             // Draw node circle

@@ -1,0 +1,50 @@
+# IntelliRouter Automated Code Review Configuration
+
+# Specify patterns for files to ignore during code review
+# These patterns use standard glob syntax
+ignore_patterns:
+  - "**/*.md"                # Ignore all markdown files
+  - "**/*.json"              # Ignore all JSON files
+  - "**/tests/**"            # Ignore test files (optional, enable if you want to skip test files)
+  - "**/examples/**"         # Ignore example files
+  - "**/target/**"           # Ignore build artifacts
+
+# Configure severity thresholds for different types of issues
+severity_thresholds:
+  compilation: "error"       # error, warning, info, none
+  style: "warning"           # error, warning, info, none
+  performance: "warning"     # error, warning, info, none
+  documentation: "info"      # error, warning, info, none
+
+# Configure test coverage thresholds
+coverage_thresholds:
+  file_minimum: 70           # Minimum coverage percentage for individual files
+  overall_minimum: 80        # Minimum overall coverage percentage
+
+# Configure specific checks
+checks:
+  clippy:
+    enabled: true            # Enable clippy checks
+    pedantic: false          # Enable clippy pedantic checks
+  
+  rustfmt:
+    enabled: true            # Enable rustfmt checks
+  
+  documentation:
+    enabled: true            # Enable documentation checks
+    public_items_only: true  # Only check documentation for public items
+  
+  tests:
+    enabled: true            # Enable test coverage checks
+
+# Configure comment behavior
+comments:
+  inline: true               # Enable inline comments on specific lines
+  summary: true              # Enable summary comment
+  approve_if_no_issues: true # Automatically approve PR if no issues are found
+  request_changes: false     # Request changes if issues are found (instead of just commenting)
+
+# Configure notification settings
+notifications:
+  mention_author: true       # Mention PR author in comments
+  mention_reviewers: false   # Mention PR reviewers in comments

@@ -12,8 +12,7 @@ mod error;
 mod executors;
 mod validation;
 
-#[cfg(test)]
-mod tests;
+// Tests moved to tests/unit/modules/chain_engine/
 
 pub use condition_evaluator::*;
 pub use context::*;

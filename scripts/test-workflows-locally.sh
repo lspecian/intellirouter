@@ -42,14 +42,16 @@ run_job() {
 echo "IntelliRouter Workflow Tester"
 echo "============================"
 echo "1. Run all workflows"
-echo "2. Run test workflow"
-echo "3. Run e2e-tests workflow"
-echo "4. Run codeql-analysis workflow"
-echo "5. Run specific job"
-echo "6. Exit"
+echo "2. Run CI workflow"
+echo "3. Run test workflow"
+echo "4. Run e2e-tests workflow"
+echo "5. Run codeql-analysis workflow"
+echo "6. Run compilation check job"
+echo "7. Run specific job"
+echo "8. Exit"
 echo
 
-read -p "Enter your choice (1-6): " choice
+read -p "Enter your choice (1-8): " choice
 
 case $choice in
     1)
@@ -57,15 +59,21 @@ case $choice in
         $ACT_CMD push
         ;;
     2)
-        run_workflow "test"
+        run_workflow "ci"
         ;;
     3)
-        run_workflow "e2e-tests"
+        run_workflow "test"
         ;;
     4)
-        run_workflow "codeql-analysis"
+        run_workflow "e2e-tests"
         ;;
     5)
+        run_workflow "codeql-analysis"
+        ;;
+    6)
+        run_job "ci" "check"
+        ;;
+    7)
         echo "Available workflows:"
         ls -1 .github/workflows/*.yml | sed 's/\.github\/workflows\///' | sed 's/\.yml//'
         echo
@@ -78,7 +86,7 @@ case $choice in
         
         run_job $workflow $job
         ;;
-    6)
+    8)
         echo "Exiting..."
         exit 0
         ;;

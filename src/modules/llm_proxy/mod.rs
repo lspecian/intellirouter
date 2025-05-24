@@ -54,6 +54,7 @@ pub fn send_request() -> Result<String, String> {
 }
 
 // Re-export key types from the server module
+#[cfg(feature = "test-utils")]
 pub use mock_backend::MockModelBackend;
 pub use server::{AppState, ServerConfig, SharedState};
 

@@ -1,0 +1,174 @@
+name: Documentation Generation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * 0'  # Run weekly on Sundays at midnight
+
+jobs:
+  generate-docs:
+    name: Generate Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc plantuml graphviz
+          pip install sphinx sphinx_rtd_theme
+          npm install -g typedoc
+
+      - name: Make documentation scripts executable
+        run: |
+          chmod +x scripts/docs/*.sh
+
+      - name: Generate documentation
+        run: ./scripts/docs/generate_docs.sh
+
+      - name: Check documentation coverage
+        run: ./scripts/docs/check_doc_coverage.sh
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: |
+            docs/api/
+            docs/user_guides/
+            docs/architecture/
+            docs/examples/
+            docs/tutorials/
+          retention-days: 30
+
+      - name: Upload documentation metrics
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation-metrics
+          path: metrics/docs/
+          retention-days: 30
+
+  check-doc-regression:
+    name: Check Documentation Regression
+    runs-on: ubuntu-latest
+    needs: generate-docs
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download documentation metrics
+        uses: actions/download-artifact@v3
+        with:
+          name: documentation-metrics
+          path: metrics/docs/
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+
+      - name: Check for documentation regressions
+        run: |
+          # Get the latest metrics file
+          LATEST_METRICS=$(find metrics/docs -name "doc_metrics_*.json" -type f -exec ls -t {} \; | head -1)
+          
+          # Get the previous metrics file (if any)
+          PREVIOUS_METRICS=$(find metrics/docs -name "doc_metrics_*.json" -type f -exec ls -t {} \; | sed -n '2p')
+          
+          if [ -z "$PREVIOUS_METRICS" ]; then
+            echo "No previous metrics found. Skipping regression check."
+            exit 0
+          fi
+          
+          # Check for regressions
+          REGRESSION=false
+          
+          # Check API docs coverage
+          LATEST_API_COVERAGE=$(jq -r '.metrics.api_docs.coverage' "$LATEST_METRICS")
+          PREVIOUS_API_COVERAGE=$(jq -r '.metrics.api_docs.coverage' "$PREVIOUS_METRICS")
+          
+          if (( $(echo "$LATEST_API_COVERAGE < $PREVIOUS_API_COVERAGE" | bc -l) )); then
+            echo "API documentation coverage regression detected: $PREVIOUS_API_COVERAGE% -> $LATEST_API_COVERAGE%"
+            REGRESSION=true
+          fi
+          
+          # Check user guides coverage
+          LATEST_USER_GUIDES_COVERAGE=$(jq -r '.metrics.user_guides.coverage' "$LATEST_METRICS")
+          PREVIOUS_USER_GUIDES_COVERAGE=$(jq -r '.metrics.user_guides.coverage' "$PREVIOUS_METRICS")
+          
+          if (( $(echo "$LATEST_USER_GUIDES_COVERAGE < $PREVIOUS_USER_GUIDES_COVERAGE" | bc -l) )); then
+            echo "User guides coverage regression detected: $PREVIOUS_USER_GUIDES_COVERAGE% -> $LATEST_USER_GUIDES_COVERAGE%"
+            REGRESSION=true
+          fi
+          
+          # Check architecture docs coverage
+          LATEST_ARCH_COVERAGE=$(jq -r '.metrics.architecture_docs.coverage' "$LATEST_METRICS")
+          PREVIOUS_ARCH_COVERAGE=$(jq -r '.metrics.architecture_docs.coverage' "$PREVIOUS_METRICS")
+          
+          if (( $(echo "$LATEST_ARCH_COVERAGE < $PREVIOUS_ARCH_COVERAGE" | bc -l) )); then
+            echo "Architecture documentation coverage regression detected: $PREVIOUS_ARCH_COVERAGE% -> $LATEST_ARCH_COVERAGE%"
+            REGRESSION=true
+          fi
+          
+          # Check examples docs coverage
+          LATEST_EXAMPLES_COVERAGE=$(jq -r '.metrics.examples_docs.coverage' "$LATEST_METRICS")
+          PREVIOUS_EXAMPLES_COVERAGE=$(jq -r '.metrics.examples_docs.coverage' "$PREVIOUS_METRICS")
+          
+          if (( $(echo "$LATEST_EXAMPLES_COVERAGE < $PREVIOUS_EXAMPLES_COVERAGE" | bc -l) )); then
+            echo "Examples documentation coverage regression detected: $PREVIOUS_EXAMPLES_COVERAGE% -> $LATEST_EXAMPLES_COVERAGE%"
+            REGRESSION=true
+          fi
+          
+          # Fail if regression detected
+          if [ "$REGRESSION" = true ]; then
+            echo "Documentation coverage regression detected!"
+            exit 1
+          else
+            echo "No documentation coverage regression detected."
+          fi
+
+  deploy-docs:
+    name: Deploy Documentation
+    runs-on: ubuntu-latest
+    needs: check-doc-regression
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Download documentation
+        uses: actions/download-artifact@v3
+        with:
+          name: documentation
+          path: docs/
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'docs: update documentation'

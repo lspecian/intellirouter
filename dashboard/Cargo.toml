@@ -1,0 +1,22 @@
+[package]
+name = "intellirouter-dashboard"
+version = "0.1.0"
+edition = "2021"
+description = "Unified project dashboard for IntelliRouter"
+
+[dependencies]
+rocket = "0.5.0"
+rocket_dyn_templates = { version = "0.1.0", features = ["handlebars"] }
+rocket_contrib = "0.4.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+tokio = { version = "1.0", features = ["full"] }
+thiserror = "1.0"
+anyhow = "1.0"
+log = "0.4"
+env_logger = "0.10"
+reqwest = { version = "0.11", features = ["json"] }
+plotters = "0.3"
+csv = "1.1"
+intellirouter = { path = ".." }
