@@ -16,9 +16,7 @@ use crate::modules::router_core::RegistryIntegration;
 use lru::LruCache;
 use tracing::{debug, info, warn};
 
-use crate::modules::model_registry::{
-    connectors::ModelConnector, storage::ModelRegistry, ModelMetadata,
-};
+use crate::modules::model_registry::{storage::ModelRegistry, ModelMetadata};
 
 use super::{
     retry::{DegradedServiceHandler, RetryPolicy},

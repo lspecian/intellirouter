@@ -136,7 +136,7 @@ pub async fn generate_validation_report(
 }
 
 /// Generate a summary of validation results
-pub fn summarize_validation_results(results: &[ValidationResult]) -> String {
+pub fn _summarize_validation_results(results: &[ValidationResult]) -> String {
     let mut summary = String::new();
 
     if results.is_empty() {

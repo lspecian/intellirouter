@@ -8,7 +8,6 @@ use std::sync::Arc;
 use tracing::debug;
 
 use crate::modules::model_registry::connectors::{ChatCompletionRequest, ChatCompletionResponse};
-use crate::modules::model_registry::storage::ModelRegistry;
 use crate::modules::router_core::{
     Router, RouterError, RouterImpl, RoutingContext, RoutingRequest,
 };

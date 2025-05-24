@@ -24,7 +24,7 @@ pub struct GrpcMemoryClient {
 
 impl GrpcMemoryClient {
     /// Create a new gRPC Memory client
-    pub async fn new(addr: &str) -> Result<Self, tonic::transport::Error> {
+    pub async fn new(_addr: &str) -> Result<Self, tonic::transport::Error> {
         // This would create the gRPC client
         // let client = memory_client::MemoryClient::connect(addr).await?;
         Ok(Self {
@@ -185,7 +185,7 @@ pub struct GrpcMemoryChainIntegrationClient {
 
 impl GrpcMemoryChainIntegrationClient {
     /// Create a new gRPC Memory-Chain integration client
-    pub async fn new(addr: &str) -> Result<Self, tonic::transport::Error> {
+    pub async fn _new(_addr: &str) -> Result<Self, tonic::transport::Error> {
         // This would create the gRPC client
         // let client = memory_chain_integration_client::MemoryChainIntegrationClient::connect(addr).await?;
         Ok(Self {

@@ -96,7 +96,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
 /// Process a WebSocket message
 pub async fn process_message(
     msg: Message,
-    state: &AppState,
+    _state: &AppState,
     tx: &mpsc::Sender<Result<Message, ApiError>>,
 ) -> Result<bool, String> {
     match msg {

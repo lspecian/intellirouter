@@ -197,7 +197,7 @@ impl ChainEngine {
     }
 
     // Handle errors in execute_chain by updating stats
-    fn handle_execution_error(&self, error: ChainError) -> ChainError {
+    fn _handle_execution_error(&self, error: ChainError) -> ChainError {
         // Update stats for failed execution
         {
             let mut stats = self.stats.write().unwrap();

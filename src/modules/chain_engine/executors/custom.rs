@@ -31,7 +31,7 @@ impl StepExecutor for CustomExecutor {
     async fn execute_step(
         &self,
         step: &ChainStep,
-        context: &ChainContext,
+        _context: &ChainContext,
     ) -> ChainResult<StepResult> {
         let start_time = Instant::now();
 

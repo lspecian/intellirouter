@@ -104,7 +104,7 @@ pub struct ValidationTestResult {
 
 impl ValidationTestResult {
     /// Create a new successful test result
-    pub fn success(
+    pub fn _success(
         name: String,
         duration_ms: u64,
         details: HashMap<String, serde_json::Value>,
@@ -119,7 +119,7 @@ impl ValidationTestResult {
     }
 
     /// Create a new failed test result
-    pub fn failure(
+    pub fn _failure(
         name: String,
         error: String,
         duration_ms: u64,

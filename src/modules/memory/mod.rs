@@ -28,7 +28,7 @@ pub fn create_conversation() -> types::Conversation {
 }
 
 /// Generate a unique ID for a conversation
-fn generate_id() -> String {
+fn _generate_id() -> String {
     // Using UUID for better uniqueness
     Uuid::new_v4().to_string()
 }

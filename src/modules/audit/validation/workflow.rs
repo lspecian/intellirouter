@@ -35,7 +35,7 @@ pub struct ValidationWorkflow {
     /// Validation configuration
     config: ValidationConfig,
     /// HTTP client for API requests
-    client: Client,
+    _client: Client,
     /// Service discovery validator
     service_discovery: ServiceDiscovery,
     /// Shared audit report
@@ -54,7 +54,7 @@ impl ValidationWorkflow {
     ) -> Self {
         Self {
             config,
-            client: Client::builder()
+            _client: Client::builder()
                 .timeout(Duration::from_secs(30))
                 .build()
                 .unwrap(),

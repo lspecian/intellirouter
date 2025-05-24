@@ -9,7 +9,7 @@ use super::{
     MessageRole, ModelConnector, ModelConnectorFactory, StreamingResponse, TokenUsage,
 };
 use async_trait::async_trait;
-use futures::{stream, StreamExt};
+use futures::stream;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -288,7 +288,7 @@ impl ModelConnector for OllamaConnector {
         // Send the request to Ollama with retry logic for transient errors
         let mut attempts = 0;
         let max_attempts = self.config.max_retries as usize + 1; // +1 for the initial attempt
-        let mut last_error = None;
+        let mut _last_error = None;
 
         let response = loop {
             attempts += 1;
@@ -302,16 +302,21 @@ impl ModelConnector for OllamaConnector {
             {
                 Ok(resp) => break resp,
                 Err(e) => {
+                    // Store the error
+                    _last_error = Some(e);
+
                     // Check if we should retry
                     if attempts >= max_attempts {
+                        // If _last_error is Some, convert it to ConnectorError::Network, else generic
+                        let err_msg = _last_error.map_or_else(
+                            || "Unknown error after all attempts".to_string(),
+                            |err| err.to_string()
+                        );
                         return Err(ConnectorError::Network(format!(
                             "Failed to send request after {} attempts: {}",
-                            attempts, e
+                            attempts, err_msg
                         )));
                     }
-
-                    // Store the error and retry after a delay
-                    last_error = Some(e);
 
                     // Exponential backoff: 100ms, 200ms, 400ms, etc.
                     let delay = std::time::Duration::from_millis(100 * (1 << (attempts - 1)));
@@ -350,7 +355,7 @@ impl ModelConnector for OllamaConnector {
         // Send the request to Ollama with retry logic for transient errors
         let mut attempts = 0;
         let max_attempts = self.config.max_retries as usize + 1; // +1 for the initial attempt
-        let mut last_error = None;
+        let mut _last_error = None;
 
         let response = loop {
             attempts += 1;
@@ -364,16 +369,21 @@ impl ModelConnector for OllamaConnector {
             {
                 Ok(resp) => break resp,
                 Err(e) => {
+                    // Store the error
+                    _last_error = Some(e);
+
                     // Check if we should retry
                     if attempts >= max_attempts {
+                        // If _last_error is Some, convert it to ConnectorError::Network, else generic
+                        let err_msg = _last_error.map_or_else(
+                            || "Unknown error after all attempts".to_string(),
+                            |err| err.to_string()
+                        );
                         return Err(ConnectorError::Network(format!(
                             "Failed to send streaming request after {} attempts: {}",
-                            attempts, e
+                            attempts, err_msg
                         )));
                     }
-
-                    // Store the error and retry after a delay
-                    last_error = Some(e);
 
                     // Exponential backoff: 100ms, 200ms, 400ms, etc.
                     let delay = std::time::Duration::from_millis(100 * (1 << (attempts - 1)));

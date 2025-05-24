@@ -399,9 +399,10 @@ impl DashboardServer {
     }
 
     /// Create router
+    #[allow(unused_variables)] // To suppress warnings for dashboards/config used in with_state
     fn create_router(&self) -> Router {
-        let dashboards = Arc::clone(&self.dashboards);
-        let config = self.config.clone();
+        // let _dashboards = Arc::clone(&self.dashboards); // Keep original clones if needed elsewhere
+        // let _config = self.config.clone();
 
         Router::new()
             // API routes
@@ -429,7 +430,7 @@ impl DashboardServer {
                 get(Self::dashboard_view_handler),
             )
             // State
-            .with_state((dashboards, config))
+            .with_state((Arc::clone(&self.dashboards), self.config.clone()))
     }
 
     /// Index handler

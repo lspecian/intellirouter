@@ -43,7 +43,7 @@ impl TopologyVisualizer {
     }
 
     /// Set output directory
-    pub fn with_output_dir(mut self, dir: impl Into<String>) -> Self {
+    pub fn _with_output_dir(mut self, dir: impl Into<String>) -> Self {
         self.output_dir = dir.into();
         self
     }
@@ -268,7 +268,7 @@ impl TestResultVisualizer {
     }
 
     /// Set output directory
-    pub fn with_output_dir(mut self, dir: impl Into<String>) -> Self {
+    pub fn _with_output_dir(mut self, dir: impl Into<String>) -> Self {
         self.output_dir = dir.into();
         self
     }
@@ -386,7 +386,7 @@ impl PerformanceVisualizer {
     }
 
     /// Set output directory
-    pub fn with_output_dir(mut self, dir: impl Into<String>) -> Self {
+    pub fn _with_output_dir(mut self, dir: impl Into<String>) -> Self {
         self.output_dir = dir.into();
         self
     }
@@ -573,7 +573,7 @@ impl ErrorVisualizer {
     }
 
     /// Set output directory
-    pub fn with_output_dir(mut self, dir: impl Into<String>) -> Self {
+    pub fn _with_output_dir(mut self, dir: impl Into<String>) -> Self {
         self.output_dir = dir.into();
         self
     }

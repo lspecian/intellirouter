@@ -182,7 +182,7 @@ impl Subscription {
     pub fn into_stream(self) -> impl Stream<Item = IpcResult<Message>> {
         let (tx, rx) = tokio::sync::mpsc::channel(100);
         let pubsub = self.pubsub.clone();
-        let channel = self.channel.clone();
+        let _channel = self.channel.clone();
 
         tokio::spawn(async move {
             // Lock the pubsub for the entire task
@@ -260,6 +260,7 @@ impl RedisClient for RedisClientImpl {
             .arg(message)
             .query_async(&mut conn)
             .await
+            .map(|_: redis::Value| ()) // Explicitly map Ok(value) to Ok(())
             .map_err(|e| IpcError::Connection(format!("Redis error: {}", e)))?;
         Ok(())
     }

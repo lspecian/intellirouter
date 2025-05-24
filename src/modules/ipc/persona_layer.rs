@@ -198,7 +198,7 @@ pub struct GrpcPersonaLayerClient {
 
 impl GrpcPersonaLayerClient {
     /// Create a new gRPC Persona Layer client
-    pub async fn new(addr: &str) -> Result<Self, tonic::transport::Error> {
+    pub async fn new(_addr: &str) -> Result<Self, tonic::transport::Error> {
         // This would create the gRPC client
         // let client = persona_layer_client::PersonaLayerClient::connect(addr).await?;
         Ok(Self {
@@ -358,7 +358,7 @@ pub struct GrpcRAGPersonaIntegrationClient {
 
 impl GrpcRAGPersonaIntegrationClient {
     /// Create a new gRPC RAG-Persona integration client
-    pub async fn new(addr: &str) -> Result<Self, tonic::transport::Error> {
+    pub async fn new(_addr: &str) -> Result<Self, tonic::transport::Error> {
         // This would create the gRPC client
         // let client = rag_persona_integration_client::RAGPersonaIntegrationClient::connect(addr).await?;
         Ok(Self {

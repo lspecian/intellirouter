@@ -93,7 +93,7 @@ impl ServiceInfo {
 
 #[cfg(not(feature = "test-utils"))]
 #[derive(Debug, Clone)]
-pub struct CommunicationTestResult {
+pub struct _CommunicationTestResult {
     pub source: ServiceType,
     pub target: ServiceType,
     pub success: bool,
@@ -172,8 +172,8 @@ impl ServiceDiscovery {
     pub async fn validate_service_discovery(&self) -> Result<(), AuditError> {
         info!("Starting service discovery validation");
 
-        let start_time = Instant::now();
-        let discovery_timeout = Duration::from_secs(self.config.discovery_timeout_secs);
+        let _start_time = Instant::now();
+        let _discovery_timeout = Duration::from_secs(self.config.discovery_timeout_secs);
 
         // First, check that all services are running
         for (service_type, service) in &self.services {

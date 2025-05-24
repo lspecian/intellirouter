@@ -573,7 +573,7 @@ impl<T> SecureGrpcClientBuilder<T> {
             (self.jwt_authenticator, self.service_name)
         {
             // Generate a token
-            let token = jwt_authenticator.generate_token(&service_name, self.roles)?;
+            let _token = jwt_authenticator.generate_token(&service_name, self.roles)?;
 
             // Add the token to the channel
             // TODO: Replace with proper interceptor when tonic is updated

@@ -197,19 +197,20 @@ impl RegistryIntegration {
     }
 
     /// Validate registry integration
+    #[allow(unused_variables)] // To suppress warning for _models if only used for iter/is_empty
     pub async fn validate(&self) -> Result<(), RouterError> {
         debug!("Validating registry integration");
 
         // Check if the registry is initialized
-        let models = self.registry.list_models();
-        if models.is_empty() {
+        let _models = self.registry.list_models();
+        if _models.is_empty() {
             return Err(RouterError::RegistryError(RegistryError::Other(
                 "Model registry is empty".to_string(),
             )));
         }
 
         // Check if there are any available models
-        let available_models = models.iter().filter(|m| m.status.is_available()).count();
+        let available_models = _models.iter().filter(|m| m.status.is_available()).count();
         if available_models == 0 {
             return Err(RouterError::NoSuitableModel(
                 "No available models found in registry".to_string(),
@@ -218,8 +219,8 @@ impl RegistryIntegration {
 
         // Check if we can connect to at least one model
         let mut connection_success = false;
-        for model in models.iter().filter(|m| m.status.is_available()).take(3) {
-            if let Some(connector) = self.registry.get_connector(&model.id) {
+        for model in _models.iter().filter(|m| m.status.is_available()).take(3) {
+            if self.registry.get_connector(&model.id).is_some() {
                 // Just check if we can get the connector, don't actually make a request
                 connection_success = true;
                 break;

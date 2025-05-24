@@ -14,7 +14,7 @@ use crate::modules::chain_engine::executors::StepExecutor;
 
 /// Loop step executor
 pub struct LoopExecutor {
-    condition_evaluator: ConditionEvaluator,
+    _condition_evaluator: ConditionEvaluator,
     // This would typically contain a reference to the chain engine
     // chain_engine: Arc<ChainEngine>,
 }
@@ -23,7 +23,7 @@ impl LoopExecutor {
     /// Create a new loop executor
     pub fn new(/* chain_engine: Arc<ChainEngine> */) -> Self {
         Self {
-            condition_evaluator: ConditionEvaluator::new(),
+            _condition_evaluator: ConditionEvaluator::new(),
             // chain_engine,
         }
     }
@@ -34,7 +34,7 @@ impl StepExecutor for LoopExecutor {
     async fn execute_step(
         &self,
         step: &ChainStep,
-        context: &ChainContext,
+        _context: &ChainContext,
     ) -> ChainResult<StepResult> {
         let start_time = Instant::now();
 
@@ -44,7 +44,7 @@ impl StepExecutor for LoopExecutor {
                 iteration_variable,
                 max_iterations,
                 steps,
-                break_condition,
+                break_condition: _,
             } => {
                 // In a real implementation, we would execute the loop
                 // let mut iteration = 0;
