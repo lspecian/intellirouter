@@ -1,0 +1,25 @@
+{
+  "timestamp": "2025-05-27T23:04:50Z",
+  "metrics": {
+    "api_docs": {
+      "success": false,
+      "coverage": 0.0,
+      "timestamp": "2025-05-27T23:04:50Z"
+    },
+    "user_guides": {
+      "success": false,
+      "coverage": 0.0,
+      "timestamp": "2025-05-27T23:04:50Z"
+    },
+    "architecture_docs": {
+      "success": false,
+      "coverage": 0.0,
+      "timestamp": "2025-05-27T23:04:50Z"
+    },
+    "examples_docs": {
+      "success": false,
+      "coverage": 0.0,
+      "timestamp": "2025-05-27T23:04:50Z"
+    }
+  }
+}
