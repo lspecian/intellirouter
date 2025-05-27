@@ -2,6 +2,7 @@
 members = [
     ".",
     "intellirouter-test-utils",
+    "dashboard",
 ]
 
 [package]
