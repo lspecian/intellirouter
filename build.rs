@@ -16,6 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         .build_server(true)
         .build_client(true)
         .out_dir("src/generated")
+        .protoc_arg("--experimental_allow_proto3_optional")
         .compile(&proto_files, &[proto_dir])?;
 
     // Tell cargo to rerun this build script if the proto files change
